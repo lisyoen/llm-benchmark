@@ -2,10 +2,20 @@
 """
 대화형 LLM 벤치마크 실행 스크립트
 기본값으로 엔터만 치면 5분 고부하 성능 테스트 실행
+
+CLI 파라미터 지원:
+  --target: 대상 서버 이름
+  --model: 모델 이름
+  --workload: 워크로드 이름
+  --duration: 테스트 시간 (초)
+  --rps: 초당 요청 수
+  --concurrency: 동시 요청 수
+  --max-tokens: 최대 토큰 수
 """
 
 import asyncio
 import sys
+import argparse
 from pathlib import Path
 from datetime import datetime
 
@@ -72,14 +82,157 @@ def input_with_default(prompt: str, default: any, value_type=str) -> any:
         return default
 
 
+def parse_arguments():
+    """CLI 인수 파싱"""
+    parser = argparse.ArgumentParser(
+        description="LLM 벤치마크 실행 (대화형 또는 CLI 모드)",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+예제:
+  # 대화형 모드 (기본값)
+  python3 run_bench_interactive.py
+  
+  # CLI 모드 - 기본 워크로드
+  python3 run_bench_interactive.py --target spark-test --model qwen3-coder-30b --workload high-load
+  
+  # CLI 모드 - 커스텀 설정
+  python3 run_bench_interactive.py --target spark-test --model qwen3-coder-30b --duration 600 --rps 50 --concurrency 100
+        """
+    )
+    
+    parser.add_argument("--target", help="대상 서버 이름")
+    parser.add_argument("--model", help="모델 이름")
+    parser.add_argument("--workload", help="워크로드 이름")
+    parser.add_argument("--duration", type=int, help="테스트 시간 (초)")
+    parser.add_argument("--rps", type=int, help="초당 요청 수")
+    parser.add_argument("--concurrency", type=int, help="동시 요청 수")
+    parser.add_argument("--max-tokens", type=int, help="최대 토큰 수")
+    parser.add_argument("--temperature", type=float, help="Temperature (0.0-2.0)")
+    parser.add_argument("--prompt-type", choices=['short', 'medium', 'long'], help="프롬프트 타입")
+    
+    return parser.parse_args()
+
+
+async def run_with_cli_args(args, config_dir: Path, output_dir: Path):
+    """CLI 인수로 벤치마크 실행"""
+    targets, models, workloads = load_configs(config_dir)
+    
+    # 대상 서버 찾기
+    target = next((t for t in targets['targets'] if t['name'] == args.target), None)
+    if not target:
+        print(f"❌ 오류: 대상 서버 '{args.target}'를 찾을 수 없습니다.")
+        print(f"사용 가능한 서버: {', '.join(t['name'] for t in targets['targets'])}")
+        sys.exit(1)
+    
+    # 모델 찾기
+    model_info = next((m for m in models['models'] if m['name'] == args.model), None)
+    if not model_info:
+        print(f"❌ 오류: 모델 '{args.model}'을 찾을 수 없습니다.")
+        print(f"사용 가능한 모델: {', '.join(m['name'] for m in models['models'])}")
+        sys.exit(1)
+    
+    # 워크로드 설정
+    if args.workload:
+        # 기존 워크로드 사용
+        workload = next((w for w in workloads['workloads'] if w['name'] == args.workload), None)
+        if not workload:
+            print(f"❌ 오류: 워크로드 '{args.workload}'를 찾을 수 없습니다.")
+            print(f"사용 가능한 워크로드: {', '.join(w['name'] for w in workloads['workloads'])}")
+            sys.exit(1)
+        workload = workload.copy()
+    else:
+        # 커스텀 워크로드 생성
+        if not args.duration or not args.rps:
+            print("❌ 오류: 워크로드 이름 또는 duration/rps를 지정해야 합니다.")
+            sys.exit(1)
+        
+        workload = {
+            'name': 'custom',
+            'description': 'CLI 커스텀 워크로드',
+            'duration': args.duration,
+            'rps': args.rps,
+            'concurrency': args.concurrency or 50,
+            'max_tokens': args.max_tokens or 2048,
+            'temperature': args.temperature or 0.7,
+            'prompt_type': args.prompt_type or 'medium'
+        }
+    
+    # CLI 인수로 오버라이드
+    if args.duration:
+        workload['duration'] = args.duration
+    if args.rps:
+        workload['rps'] = args.rps
+    if args.concurrency:
+        workload['concurrency'] = args.concurrency
+    if args.max_tokens:
+        workload['max_tokens'] = args.max_tokens
+    if args.temperature:
+        workload['temperature'] = args.temperature
+    if args.prompt_type:
+        workload['prompt_type'] = args.prompt_type
+    
+    # 프롬프트 로드
+    prompts = workloads['prompt_templates'][workload['prompt_type']]
+    
+    # 설정 확인
+    print("\n" + "="*60)
+    print("🚀 CLI 모드로 벤치마크 실행")
+    print("="*60)
+    print(f"  서버: {target['name']} - {target['description']}")
+    print(f"  모델: {model_info['full_name']}")
+    print(f"  워크로드: {workload.get('description', 'Custom')}")
+    print(f"    - 시간: {workload['duration']}초 ({workload['duration']//60}분)")
+    print(f"    - RPS: {workload['rps']} (초당 요청 수)")
+    print(f"    - 동시성: {workload['concurrency']}")
+    print(f"    - 예상 총 요청: {workload['duration'] * workload['rps']}개")
+    print(f"    - 최대 토큰: {workload['max_tokens']}")
+    print(f"    - Temperature: {workload['temperature']}")
+    print(f"    - 프롬프트 타입: {workload['prompt_type']}")
+    print("="*60 + "\n")
+    
+    # 벤치마크 실행
+    benchmark = LLMBenchmark(config_dir, output_dir)
+    
+    await benchmark.run_workload(
+        target,
+        model_info['full_name'],
+        workload,
+        prompts
+    )
+    
+    # 결과 저장
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    output_file = output_dir / f"bench_{target['name']}_{model_info['name']}_{workload['name']}_{timestamp}.jsonl"
+    benchmark.save_results(output_file)
+    
+    print("\n✅ 벤치마크 완료!")
+    print(f"\n📊 다음 명령으로 결과를 분석하세요:")
+    print(f"  python3 scripts/parse_metrics.py {output_file}")
+
+
 async def main():
+    """메인 함수"""
+    config_dir = Path(__file__).parent.parent / "configs"
+    output_dir = Path(__file__).parent.parent / "results" / "raw"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    
+    # CLI 인수 파싱
+    args = parse_arguments()
+    
+    # CLI 모드 vs 대화형 모드
+    if args.target or args.model or args.workload or args.duration:
+        # CLI 모드: 인수가 하나라도 있으면 CLI 모드
+        await run_with_cli_args(args, config_dir, output_dir)
+    else:
+        # 대화형 모드
+        await run_interactive(config_dir, output_dir)
+
+
+async def run_interactive(config_dir: Path, output_dir: Path):
+    """대화형 모드 실행"""
     print_header()
     
-    config_dir = Path("configs")
-    output_dir = Path("results/raw")
-    
-    # 설정 로드
-    targets_config, models_config, workloads_config = load_configs(config_dir)
+    targets, models, workloads = load_configs(config_dir)
     
     # 1. 서버 선택
     target_options = [
@@ -88,7 +241,7 @@ async def main():
             'data': t,
             'display': f"{t['name']}: {t['description']}"
         }
-        for t in targets_config['targets']
+        for t in targets['targets']
     ]
     
     # Spark를 기본값으로 (인덱스 찾기)
@@ -111,7 +264,7 @@ async def main():
             'data': m,
             'display': f"{m['name']}: {m['description']}"
         }
-        for m in models_config['models']
+        for m in models['models']
     ]
     
     # qwen3-coder-30b를 기본값으로
@@ -178,7 +331,7 @@ async def main():
                 'data': w,
                 'display': f"{w['name']}: {w['description']} ({w['duration']}초, RPS:{w['rps']})"
             }
-            for w in workloads_config['workloads']
+            for w in workloads['workloads']
         ]
         
         # high-load를 기본값으로
@@ -208,7 +361,7 @@ async def main():
         }
     
     # 프롬프트 로드
-    prompts = workloads_config['prompt_templates'][workload['prompt_type']]
+    prompts = workloads['prompt_templates'][workload['prompt_type']]
     
     # 설정 확인
     print("\n" + "="*60)

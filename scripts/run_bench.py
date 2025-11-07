@@ -121,16 +121,21 @@ class LLMBenchmark:
         workload: Dict,
         prompts: List[str]
     ):
-        """워크로드 실행 (동시성 지원)"""
+        """워크로드 실행 (동시성 지원, 진행 상황 표시 개선)"""
         print(f"\n=== Starting workload: {workload['name']} ===")
         print(f"Target: {target['name']}, Model: {model}")
         print(f"Duration: {workload['duration']}s, RPS: {workload['rps']}, Concurrency: {workload['concurrency']}")
+        
+        total_requests = workload['duration'] * workload['rps']
+        print(f"Expected total requests: {total_requests}")
+        print(f"\n{'='*70}")
         
         async with httpx.AsyncClient() as client:
             start_time = time.time()
             request_interval = 1.0 / workload['rps']
             tasks = []
             request_count = 0
+            last_print_time = start_time
             
             # 요청 생성 루프
             while time.time() - start_time < workload['duration']:
@@ -150,15 +155,29 @@ class LLMBenchmark:
                 tasks.append(task)
                 request_count += 1
                 
-                # 진행 상황 출력
-                if request_count % 50 == 0:
-                    print(f"Requests launched: {request_count}")
+                # 진행 상황 출력 (1초마다)
+                current_time = time.time()
+                if current_time - last_print_time >= 1.0:
+                    elapsed = current_time - start_time
+                    remaining = workload['duration'] - elapsed
+                    progress = (elapsed / workload['duration']) * 100
+                    
+                    print(f"\r⏱️  진행: {int(elapsed)}s / {workload['duration']}s "
+                          f"({progress:.1f}%) | "
+                          f"요청: {request_count:,} / {total_requests:,} | "
+                          f"남은 시간: {int(remaining)}s ({int(remaining/60)}분 {int(remaining%60)}초)", 
+                          end='', flush=True)
+                    last_print_time = current_time
                 
                 # RPS 유지를 위한 대기
                 await asyncio.sleep(request_interval)
             
+            # 최종 진행 상황
+            print(f"\r⏱️  요청 생성 완료: {request_count:,}개 (100%)                                    ")
+            
             # 모든 요청 완료 대기
-            print(f"\nWaiting for all {len(tasks)} requests to complete...")
+            print(f"\n{'='*70}")
+            print(f"⏳ 모든 요청 응답 대기 중... ({len(tasks):,}개)")
             results = await asyncio.gather(*tasks, return_exceptions=True)
             
             # 결과 수집
@@ -168,7 +187,8 @@ class LLMBenchmark:
             
             # 최종 통계
             success_count = sum(1 for r in self.results if r['success'])
-            print(f"Completed: {len(self.results)}, Success: {success_count}")
+            print(f"✅ 완료: {len(self.results):,}개, 성공: {success_count:,}개 ({success_count/len(self.results)*100:.1f}%)")
+            print(f"{'='*70}\n")
     
     async def _send_and_record(
         self,

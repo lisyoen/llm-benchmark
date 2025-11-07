@@ -93,7 +93,32 @@ python3 scripts/run_bench_interactive.py
 - 서버, 모델, 워크로드 선택 가능
 - 커스텀 설정 지원 (시간, RPS, 토큰 수 등)
 
-#### 개별 스크립트 실행
+#### 🖥️ CLI 모드 실행 (자동화/스크립트용)
+
+```bash
+# 가상환경 활성화
+source venv/bin/activate
+
+# 사전 정의된 워크로드 사용
+python3 scripts/run_bench_interactive.py --target spark-test --model qwen3-coder-30b --workload high-load
+
+# 커스텀 설정으로 실행
+python3 scripts/run_bench_interactive.py --target spark-test --model qwen3-coder-30b --duration 600 --rps 50 --concurrency 100
+
+# 도움말 보기
+python3 scripts/run_bench_interactive.py --help
+```
+
+**파라미터:**
+- `--target`: 대상 서버 이름 (spark-test, titan-test, score-main 등)
+- `--model`: 모델 이름 (qwen3-coder-30b, llama-3.1-70b-fp8 등)
+- `--workload`: 워크로드 이름 (low-load, medium-load, high-load, stress-test)
+- `--duration`: 테스트 시간 (초)
+- `--rps`: 초당 요청 수
+- `--concurrency`: 동시 요청 수
+- `--max-tokens`, `--temperature`, `--prompt-type`: 추가 옵션
+
+#### 개별 스크립트 실행 (저수준 제어)
 
 ```bash
 # 벤치마크 실행
