@@ -346,7 +346,7 @@ python3 scripts/gen_report.py
 ## 개발자 정보
 
 **프로젝트명:** Run Bench  
-**작성자:** 이창연 (DevOps AI사업TF)
+**작성자:** 이창연 (DevOps AI사업TF)  
 **작성일:** 2025-11-07  
 **라이선스:** MIT
 
