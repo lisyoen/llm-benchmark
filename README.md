@@ -108,6 +108,23 @@ mkdir -p results/raw results/summary results/reports
 
 ## 사용법
 
+### 가상환경 활성화 (중요!)
+
+벤치마크를 실행하기 전에 **반드시 가상환경을 활성화**해야 합니다:
+
+```bash
+# 프로젝트 디렉토리로 이동
+cd llm-benchmark  # 또는 run-bench-20251107-001
+
+# 가상환경 활성화
+source venv/bin/activate
+
+# 활성화되면 프롬프트에 (venv)가 표시됩니다
+(venv) user@host:~/llm-benchmark$
+```
+
+**VSCode 터미널**은 자동으로 가상환경을 활성화하지만, **일반 SSH 터미널**에서는 수동 활성화가 필요합니다.
+
 ### 측정 방식
 
 **Run Bench**는 실제 프로덕션 환경을 시뮬레이션하는 **부하 생성 기반 성능 측정** 방식을 사용합니다:
