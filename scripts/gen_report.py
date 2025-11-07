@@ -66,9 +66,9 @@ class ReportGenerator:
         section = "## 1. 개요\n\n"
         
         section += f"- **총 테스트 수:** {len(df)}\n"
-        section += f"- **테스트 대상:** {', '.join(df['target'].unique())}\n"
-        section += f"- **테스트 모델:** {', '.join(df['model'].unique())}\n"
-        section += f"- **워크로드:** {', '.join(df['workload'].unique())}\n\n"
+        section += f"- **테스트 대상:** {', '.join(str(x) for x in df['target'].unique() if pd.notna(x))}\n"
+        section += f"- **테스트 모델:** {', '.join(str(x) for x in df['model'].unique() if pd.notna(x))}\n"
+        section += f"- **워크로드:** {', '.join(str(x) for x in df['workload'].unique() if pd.notna(x))}\n\n"
         
         section += "---\n\n"
         return section
@@ -82,7 +82,12 @@ class ReportGenerator:
         section += "|--------|-------|----------|----------|------------|---------|----------|\n"
         
         for _, row in df.iterrows():
-            section += f"| {row['target']} | {row['model'][:30]}... | {row['workload']} | "
+            target = str(row['target']) if pd.notna(row['target']) else 'N/A'
+            model = str(row['model']) if pd.notna(row['model']) else 'N/A'
+            workload = str(row['workload']) if pd.notna(row['workload']) else 'N/A'
+            model_short = model[:30] + '...' if len(model) > 30 else model
+            
+            section += f"| {target} | {model_short} | {workload} | "
             section += f"{row['ttft_mean']:.3f} | {row['ttft_median']:.3f} | "
             section += f"{row['ttft_p95']:.3f} | {row['ttft_p99']:.3f} |\n"
         
@@ -91,7 +96,12 @@ class ReportGenerator:
         section += "|--------|-------|----------|----------|------------|---------|----------|\n"
         
         for _, row in df.iterrows():
-            section += f"| {row['target']} | {row['model'][:30]}... | {row['workload']} | "
+            target = str(row['target']) if pd.notna(row['target']) else 'N/A'
+            model = str(row['model']) if pd.notna(row['model']) else 'N/A'
+            workload = str(row['workload']) if pd.notna(row['workload']) else 'N/A'
+            model_short = model[:30] + '...' if len(model) > 30 else model
+            
+            section += f"| {target} | {model_short} | {workload} | "
             section += f"{row['total_time_mean']:.3f} | {row['total_time_median']:.3f} | "
             section += f"{row['total_time_p95']:.3f} | {row['total_time_p99']:.3f} |\n"
         
@@ -100,7 +110,12 @@ class ReportGenerator:
         section += "|--------|-------|----------|-----------------|-------------------|----------------|\n"
         
         for _, row in df.iterrows():
-            section += f"| {row['target']} | {row['model'][:30]}... | {row['workload']} | "
+            target = str(row['target']) if pd.notna(row['target']) else 'N/A'
+            model = str(row['model']) if pd.notna(row['model']) else 'N/A'
+            workload = str(row['workload']) if pd.notna(row['workload']) else 'N/A'
+            model_short = model[:30] + '...' if len(model) > 30 else model
+            
+            section += f"| {target} | {model_short} | {workload} | "
             section += f"{row['tokens_per_sec_mean']:.1f} | {row['tokens_per_sec_median']:.1f} | "
             section += f"{row['tokens_per_sec_p95']:.1f} |\n"
         
@@ -109,9 +124,18 @@ class ReportGenerator:
         section += "|--------|-------|----------|-------|---------|--------|-------------|\n"
         
         for _, row in df.iterrows():
-            section += f"| {row['target']} | {row['model'][:30]}... | {row['workload']} | "
-            section += f"{int(row['total_requests'])} | {int(row['successful_requests'])} | "
-            section += f"{int(row['failed_requests'])} | {row['success_rate']:.1f}% |\n"
+            target = str(row['target']) if pd.notna(row['target']) else 'N/A'
+            model = str(row['model']) if pd.notna(row['model']) else 'N/A'
+            workload = str(row['workload']) if pd.notna(row['workload']) else 'N/A'
+            model_short = model[:30] + '...' if len(model) > 30 else model
+            
+            total = int(row['total_requests']) if pd.notna(row['total_requests']) else 0
+            success = int(row['successful_requests']) if pd.notna(row['successful_requests']) else 0
+            failed = int(row['failed_requests']) if pd.notna(row['failed_requests']) else 0
+            rate = row['success_rate'] if pd.notna(row['success_rate']) else 0.0
+            
+            section += f"| {target} | {model_short} | {workload} | "
+            section += f"{total} | {success} | {failed} | {rate:.1f}% |\n"
         
         section += "\n---\n\n"
         return section

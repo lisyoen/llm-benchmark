@@ -216,9 +216,10 @@ class LLMBenchmark:
         return result
     
     def save_results(self, output_file: Path):
-        """결과를 JSONL 파일로 저장"""
+        """결과를 JSONL과 CSV 형식으로 저장"""
         output_file.parent.mkdir(parents=True, exist_ok=True)
         
+        # JSONL 저장
         with open(output_file, 'w', encoding='utf-8') as f:
             for result in self.results:
                 f.write(json.dumps(result, ensure_ascii=False) + '\n')
@@ -227,6 +228,16 @@ class LLMBenchmark:
         print(f"  Total requests: {len(self.results)}")
         success_count = sum(1 for r in self.results if r['success'])
         print(f"  Successful: {success_count} ({success_count/len(self.results)*100:.1f}%)")
+        
+        # CSV 저장
+        csv_file = output_file.with_suffix('.csv')
+        try:
+            import pandas as pd
+            df = pd.DataFrame(self.results)
+            df.to_csv(csv_file, index=False, encoding='utf-8')
+            print(f"✓ CSV saved to: {csv_file}")
+        except Exception as e:
+            print(f"⚠️  CSV 저장 실패: {e}")
 
 
 async def main():

@@ -1,15 +1,15 @@
 # LLM 벤치마크 리포트
 
-**생성 일시:** 2025-11-07 08:00:12
+**생성 일시:** 2025-11-07 10:49:40
 
 ---
 
 ## 1. 개요
 
-- **총 테스트 수:** 1
+- **총 테스트 수:** 3
 - **테스트 대상:** spark-test
 - **테스트 모델:** Qwen/Qwen3-Coder-30B-A3B-Instruct
-- **워크로드:** low-load
+- **워크로드:** low-load, custom
 
 ---
 
@@ -20,24 +20,32 @@
 | Target | Model | Workload | Mean (s) | Median (s) | P95 (s) | P99 (s) |
 |--------|-------|----------|----------|------------|---------|----------|
 | spark-test | Qwen/Qwen3-Coder-30B-A3B-Instr... | low-load | 0.091 | 0.084 | 0.156 | 0.156 |
+| spark-test | Qwen/Qwen3-Coder-30B-A3B-Instr... | custom | 0.228 | 0.221 | 0.356 | 0.356 |
+| N/A | N/A | N/A | nan | nan | nan | nan |
 
 ### 2.2 총 응답 시간
 
 | Target | Model | Workload | Mean (s) | Median (s) | P95 (s) | P99 (s) |
 |--------|-------|----------|----------|------------|---------|----------|
 | spark-test | Qwen/Qwen3-Coder-30B-A3B-Instr... | low-load | 5.061 | 2.972 | 14.454 | 14.454 |
+| spark-test | Qwen/Qwen3-Coder-30B-A3B-Instr... | custom | 116.266 | 119.002 | 136.879 | 136.879 |
+| N/A | N/A | N/A | nan | nan | nan | nan |
 
 ### 2.3 토큰 처리량
 
 | Target | Model | Workload | Mean (tokens/s) | Median (tokens/s) | P95 (tokens/s) |
 |--------|-------|----------|-----------------|-------------------|----------------|
 | spark-test | Qwen/Qwen3-Coder-30B-A3B-Instr... | low-load | 25.3 | 25.6 | 26.3 |
+| spark-test | Qwen/Qwen3-Coder-30B-A3B-Instr... | custom | 6.8 | 6.7 | 7.7 |
+| N/A | N/A | N/A | nan | nan | nan |
 
 ### 2.4 성공률
 
 | Target | Model | Workload | Total | Success | Failed | Success Rate |
 |--------|-------|----------|-------|---------|--------|-------------|
 | spark-test | Qwen/Qwen3-Coder-30B-A3B-Instr... | low-load | 12 | 12 | 0 | 100.0% |
+| spark-test | Qwen/Qwen3-Coder-30B-A3B-Instr... | custom | 20 | 20 | 0 | 100.0% |
+| N/A | N/A | N/A | 0 | 0 | 0 | 0.0% |
 
 ---
 

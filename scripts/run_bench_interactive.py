@@ -16,6 +16,7 @@ CLI 파라미터 지원:
 import asyncio
 import sys
 import argparse
+import subprocess
 from pathlib import Path
 from datetime import datetime
 
@@ -206,8 +207,11 @@ async def run_with_cli_args(args, config_dir: Path, output_dir: Path):
     benchmark.save_results(output_file)
     
     print("\n✅ 벤치마크 완료!")
-    print(f"\n📊 다음 명령으로 결과를 분석하세요:")
-    print(f"  python3 scripts/parse_metrics.py {output_file}")
+    print(f"� 원시 데이터: {output_file}")
+    
+    # 자동으로 분석 및 보고서 생성
+    print("\n📊 결과 분석 중...")
+    generate_report(output_file)
 
 
 async def main():
@@ -402,9 +406,62 @@ async def run_interactive(config_dir: Path, output_dir: Path):
     benchmark.save_results(output_file)
     
     print("\n✅ 벤치마크 완료!")
-    print(f"\n📊 다음 명령으로 결과를 분석하세요:")
-    print(f"  python3 scripts/parse_metrics.py {output_file}")
-    print(f"  python3 scripts/gen_report.py")
+    print(f"📁 원시 데이터: {output_file}")
+    
+    # 자동으로 분석 및 보고서 생성
+    print("\n📊 결과 분석 중...")
+    generate_report(output_file)
+
+
+def generate_report(result_file: Path):
+    """벤치마크 결과 분석 및 보고서 자동 생성"""
+    project_root = result_file.parent.parent.parent
+    scripts_dir = project_root / "scripts"
+    summary_dir = project_root / "results" / "summary"
+    reports_dir = project_root / "results" / "reports"
+    
+    summary_dir.mkdir(parents=True, exist_ok=True)
+    reports_dir.mkdir(parents=True, exist_ok=True)
+    
+    try:
+        # 1. 통계 분석 (parse_metrics.py)
+        print("  → 통계 계산 중...")
+        result = subprocess.run(
+            [sys.executable, str(scripts_dir / "parse_metrics.py"), str(result_file)],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        print(result.stdout)
+        
+        # 2. 보고서 생성 (gen_report.py)
+        print("  → 보고서 생성 중...")
+        result = subprocess.run(
+            [sys.executable, str(scripts_dir / "gen_report.py")],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        print(result.stdout)
+        
+        # 최종 결과 출력
+        report_file = reports_dir / "benchmark_report.md"
+        if report_file.exists():
+            print(f"\n✨ 보고서 생성 완료!")
+            print(f"📄 보고서: {report_file}")
+            
+            # CSV 파일 찾기
+            csv_files = list(summary_dir.glob("*.csv"))
+            if csv_files:
+                latest_csv = max(csv_files, key=lambda p: p.stat().st_mtime)
+                print(f"📊 통계 요약: {latest_csv}")
+        
+    except subprocess.CalledProcessError as e:
+        print(f"\n⚠️  보고서 생성 중 오류 발생:")
+        print(e.stderr)
+        print(f"\n수동으로 실행하세요:")
+        print(f"  python3 scripts/parse_metrics.py {result_file}")
+        print(f"  python3 scripts/gen_report.py")
 
 
 if __name__ == "__main__":
