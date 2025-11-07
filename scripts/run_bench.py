@@ -121,43 +121,79 @@ class LLMBenchmark:
         workload: Dict,
         prompts: List[str]
     ):
-        """워크로드 실행"""
+        """워크로드 실행 (동시성 지원)"""
         print(f"\n=== Starting workload: {workload['name']} ===")
         print(f"Target: {target['name']}, Model: {model}")
-        print(f"Duration: {workload['duration']}s, RPS: {workload['rps']}")
+        print(f"Duration: {workload['duration']}s, RPS: {workload['rps']}, Concurrency: {workload['concurrency']}")
         
         async with httpx.AsyncClient() as client:
             start_time = time.time()
             request_interval = 1.0 / workload['rps']
+            tasks = []
+            request_count = 0
             
+            # 요청 생성 루프
             while time.time() - start_time < workload['duration']:
                 # 프롬프트 선택 (라운드 로빈)
-                prompt = prompts[len(self.results) % len(prompts)]
+                prompt = prompts[request_count % len(prompts)]
                 
-                # 요청 전송
-                result = await self.send_request(
-                    client,
-                    target['base_url'],
-                    target['api_key'],
-                    model,
-                    prompt,
-                    workload['max_tokens'],
-                    workload['temperature']
+                # 비동기 요청 태스크 생성
+                task = asyncio.create_task(
+                    self._send_and_record(
+                        client,
+                        target,
+                        model,
+                        prompt,
+                        workload
+                    )
                 )
-                
-                result['workload'] = workload['name']
-                result['model'] = model
-                result['target'] = target['name']
-                
-                self.results.append(result)
+                tasks.append(task)
+                request_count += 1
                 
                 # 진행 상황 출력
-                if len(self.results) % 10 == 0:
-                    success_count = sum(1 for r in self.results if r['success'])
-                    print(f"Requests: {len(self.results)}, Success: {success_count}")
+                if request_count % 50 == 0:
+                    print(f"Requests launched: {request_count}")
                 
                 # RPS 유지를 위한 대기
                 await asyncio.sleep(request_interval)
+            
+            # 모든 요청 완료 대기
+            print(f"\nWaiting for all {len(tasks)} requests to complete...")
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            
+            # 결과 수집
+            for result in results:
+                if isinstance(result, dict):
+                    self.results.append(result)
+            
+            # 최종 통계
+            success_count = sum(1 for r in self.results if r['success'])
+            print(f"Completed: {len(self.results)}, Success: {success_count}")
+    
+    async def _send_and_record(
+        self,
+        client: httpx.AsyncClient,
+        target: Dict,
+        model: str,
+        prompt: str,
+        workload: Dict
+    ) -> Dict:
+        """요청 전송 및 결과 기록"""
+        result = await self.send_request(
+            client,
+            target['base_url'],
+            target['api_key'],
+            model,
+            prompt,
+            workload['max_tokens'],
+            workload['temperature']
+        )
+        
+        result['workload'] = workload['name']
+        result['model'] = model
+        result['target'] = target['name']
+        
+        return result
     
     def save_results(self, output_file: Path):
         """결과를 JSONL 파일로 저장"""
