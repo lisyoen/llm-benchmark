@@ -4,7 +4,8 @@
 
 set -e
 
-VERSION="1.0.0"
+# 버전: YYYYMMDD-BUILD
+VERSION="$(date +%Y%m%d)-001"
 PACKAGE_NAME="run-bench-${VERSION}"
 BUILD_DIR="build_package"
 

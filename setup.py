@@ -19,7 +19,7 @@ def read_requirements():
 
 setup(
     name="llm-benchmark",
-    version="1.0.0",
+    version="20251107.001",
     author="S-Core",
     author_email="",
     description="Run Bench - LLM 추론 서버 성능 벤치마크 도구",

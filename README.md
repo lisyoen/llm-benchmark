@@ -43,8 +43,8 @@ llm-benchmark/
 
 ```bash
 # 1. 패키지 압축 해제
-tar -xzf run-bench-1.0.0.tar.gz
-cd run-bench-1.0.0
+tar -xzf run-bench-20251107-001.tar.gz
+cd run-bench-20251107-001
 
 # 2. 설치 스크립트 실행
 ./install.sh
@@ -82,7 +82,8 @@ mkdir -p results/raw results/summary results/reports
 
 ```bash
 ./build_package.sh
-# run-bench-1.0.0.tar.gz 파일이 생성됩니다
+# run-bench-YYYYMMDD-BBB.tar.gz 파일이 생성됩니다
+# 예: run-bench-20251107-001.tar.gz
 ```
 
 # 가상환경 생성 및 활성화
