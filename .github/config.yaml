@@ -1,0 +1,70 @@
+# AI Code Assistant Continue 설정 파일
+# 서버 접속 정보 확인용
+name: Local Assistant
+version: 1.0.0
+schema: v1
+models:
+# for Titan: 사내 테스트용 GPU 장비 TITAN GPU 탑재
+  - name: Titan/Qwen3-4B-Instruct-2507
+    systemMessage: 한국어로 답변해줘. 
+    provider: openai
+    model: Qwen/Qwen3-4B-Instruct-2507
+    apiKey: sk-BgtxyTF5R84B8M_v_1NAXw
+    apiBase: http://172.21.113.213:4000/v1
+    contextLength: 16384
+    roles:
+      - chat
+      - edit
+      - apply
+# for Spark: 사내 테스트용 GPU 장비 DGX Spark
+  - name: Spark/Qwen3-Coder-30B-A3B-Instruct
+    systemMessage: 한국어로 답변해줘.
+    provider: openai
+    model: Qwen/Qwen3-Coder-30B-A3B-Instruct
+    apiKey: sk-wXZENemUnmkTPLwbmj7Vfg
+    apiBase: http://172.21.113.31:4000/v1
+    contextLength: 16384
+    roles:
+      - chat
+      - edit
+      - apply
+# for S-Core LLM Server: 사내 주력 LLM 서버 H200 8장 구성
+  - name: S-Core/Qwen3-Coder-30B-A3B-Instruct
+    systemMessage: 한국어로 답변해줘.
+    provider: openai
+    model: Qwen/Qwen3-Coder-30B-A3B-Instruct
+    apiKey: sk-EXz62Nu03qDE31sjVL51Qw
+    apiBase: http://172.21.135.113:4000/v1
+    contextLength: 16384
+    roles:
+      - chat
+      - edit
+      - apply
+# for Dell 7960 : 외부로 반출된 서버 RTX Pro 6000 Max-Q 2장 구성
+  # - name: Qwen/Qwen3-Coder-30B-A3B-Instruct
+  #   systemMessage: 한국어로 답변해줘. 생성한 코드 스니펫의 시작에 'AI AD '와 생성된 라인수를 합쳐서 한줄로 주석으로
+  #     달아줘.생성한 코드 스니펫의 끝에는 'AI END'를 한줄로 주석으로 달아줘.
+  #   provider: openai
+  #   model: Qwen/Qwen3-Coder-30B-A3B-Instruct
+  #   apiKey: sk-LqzzpnlBf6CTGUET0B4KgA
+  #   apiBase: http://172.21.113.213:4000/v1
+  #   contextLength: 16384
+  #   roles:
+  #     - chat
+  #     - edit
+  #     - apply
+  #   capabilities:
+  #     - tool_use
+context:
+  - provider: open
+  - provider: code
+  - provider: docs
+  - provider: diff
+  - provider: terminal
+  - provider: problems
+  - provider: folder
+  - provider: codebase
+data:
+  - name: logs
+    schema: 0.2.0
+    destination: file://c:/continue_logs

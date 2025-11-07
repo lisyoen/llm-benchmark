@@ -1,0 +1,24 @@
+# 벤치마크 대상 엔드포인트 설정
+
+# OpenAI 호환 API 엔드포인트 목록
+targets:
+  # vLLM 서버 예시
+  - name: vllm-local
+    base_url: http://localhost:8000/v1
+    api_key: "EMPTY"  # vLLM은 기본적으로 API 키 불필요
+    description: "로컬 vLLM 서버"
+    
+  # LiteLLM 프록시 예시
+  - name: litellm-proxy
+    base_url: http://localhost:4000/v1
+    api_key: "sk-1234"  # LiteLLM 프록시 API 키
+    description: "LiteLLM 프록시 서버"
+    
+  # OpenAI API (비교 기준용)
+  - name: openai
+    base_url: https://api.openai.com/v1
+    api_key: "${OPENAI_API_KEY}"  # 환경변수에서 가져오기
+    description: "OpenAI 공식 API"
+
+# 기본 대상 (미지정 시 사용)
+default_target: vllm-local

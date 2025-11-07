@@ -1,0 +1,33 @@
+# 테스트 대상 모델 목록
+
+models:
+  # Llama 계열
+  - name: llama-3.1-8b-instruct
+    full_name: meta-llama/Meta-Llama-3.1-8B-Instruct
+    context_length: 8192
+    description: "Llama 3.1 8B Instruct"
+    
+  - name: llama-3.1-70b-instruct
+    full_name: meta-llama/Meta-Llama-3.1-70B-Instruct
+    context_length: 8192
+    description: "Llama 3.1 70B Instruct"
+    
+  # Mistral 계열
+  - name: mistral-7b-instruct
+    full_name: mistralai/Mistral-7B-Instruct-v0.3
+    context_length: 32768
+    description: "Mistral 7B Instruct v0.3"
+    
+  # Qwen 계열
+  - name: qwen2.5-7b-instruct
+    full_name: Qwen/Qwen2.5-7B-Instruct
+    context_length: 32768
+    description: "Qwen 2.5 7B Instruct"
+    
+  - name: qwen2.5-72b-instruct
+    full_name: Qwen/Qwen2.5-72B-Instruct
+    context_length: 32768
+    description: "Qwen 2.5 72B Instruct"
+
+# 기본 모델 (미지정 시 사용)
+default_model: llama-3.1-8b-instruct

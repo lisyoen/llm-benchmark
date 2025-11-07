@@ -1,0 +1,111 @@
+# LLM Benchmark 프로젝트 지시사항
+
+## 프로젝트 개요
+- **프로젝트명**: llm-benchmark
+- **목적**: GPU 서버 환경에서 LLM 성능 자동 측정 벤치마크 도구
+- **대상**: vLLM, LiteLLM 등 OpenAI 호환 API
+- **기술 스택**: Python 3.11+, httpx, asyncio, pyyaml, pandas
+
+## 프로젝트 구조
+```
+llm-benchmark/
+├── scripts/          # 실행 스크립트
+│   ├── run_bench.py      # 비동기 부하 테스트
+│   ├── parse_metrics.py  # 결과 파싱
+│   ├── gen_report.py     # 리포트 생성
+│   └── run_bench.sh      # 파이프라인 실행
+├── configs/          # 설정 파일 (YAML)
+│   ├── targets.yaml      # 엔드포인트
+│   ├── models.yaml       # 모델 목록
+│   └── workloads.yaml    # 워크로드 패턴
+├── results/          # 결과 저장
+│   ├── raw/              # JSONL
+│   ├── summary/          # CSV
+│   └── reports/          # Markdown
+└── .github/          # 프로젝트 문서
+```
+
+## 측정 지표
+- TTFT (Time To First Token): 첫 토큰 지연시간
+- 총 응답시간: 요청~응답 완료
+- 토큰 처리량: tokens/sec
+- 성공률: 안정성 지표
+
+## 코드 품질 관리
+
+### 문법 오류 확인 및 수정
+**코드 변경 후 반드시 `get_errors` 도구로 문법 오류 확인:**
+- Python 스크립트 수정 시 `get_errors` 도구 사용
+- 발견된 오류는 즉시 수정
+- import 누락, 타입 불일치 등 모든 오류 해결
+
+**예시:**
+```
+1. 코드 수정 완료
+2. get_errors 실행하여 에러 확인
+3. 에러 발견 시 즉시 수정
+4. 다시 get_errors로 검증
+5. 에러 없을 때까지 반복
+```
+
+## 개발 원칙
+- Python PEP 8 스타일 준수
+- 함수/클래스에 독스트링 작성
+- 타입 힌트 사용
+- 비동기 프로그래밍 (async/await)
+- YAML 기반 설정 관리
+
+## 최근 작업 내역 (2025-11-06)
+
+### 무한 루프 근본 해결 완료 ✅
+**문제**: "이 프로젝트 분석해줘" → list_files (XML) 실행 → 텍스트 응답 → "[Tool 사용 권장 메시지...]" 무한 반복
+
+**원인**: 
+- XML Tool이 `else` 블록 내부에 중첩됨 (2등 시민)
+- XML 실행 → 재귀 호출 → 텍스트 응답 → `else` 잘못 진입
+
+**해결** (ClineView.java 라인 282-400):
+```java
+// Before (잘못된 구조):
+if (hasJsonTools) {
+    executeJsonTools();
+} else {
+    if (hasXmlTools) {  // ← 중첩!
+        executeXmlTools();
+    } else {
+        textOnly();
+    }
+}
+
+// After (올바른 구조):
+boolean hasJsonTools = message.has("tool_calls") && ...;
+List<XmlToolCall> xmlTools = XmlToolParser.parseXmlTools(content);
+boolean hasXmlTools = !xmlTools.isEmpty();
+
+if (hasJsonTools) {
+    executeJsonTools();
+} else if (hasXmlTools) {  // ← 평탄화!
+    executeXmlTools();
+} else {
+    textOnly();
+}
+```
+
+**결과**: XML과 JSON을 동등하게 처리, 무한 루프 근본 해결
+
+### 새 채팅 완전 초기화 ✅
+**VSCode Cline의 clearTask() 패턴 적용**:
+- `httpClient` 재생성으로 이전 세션과 완전 분리
+- `toolExecutor` 재생성
+- `conversationHistory` 초기화
+- 모든 상태 완전 리셋
+
+### Qwen3-Coder-30B 분석 완료
+- 회사 표준: Qwen3-Coder-30B (Tool Calling 특화)
+- 현재 환경: RTX 4070 Super 12GB VRAM
+- 결론: 30B는 17GB+ 필요 → **하드웨어 부족으로 14B 유지**
+- XML/JSON 파싱으로 유사한 Tool Calling 기능 구현
+
+## 다음 작업
+- Eclipse IDE 통합 테스트 (무한 루프 해결 검증)
+- 인사말 Tool 호출 문제 개선 (tool_choice API 검토)
