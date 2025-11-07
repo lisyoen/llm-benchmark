@@ -1,0 +1,45 @@
+# 패키지 배포 파일 제외
+dist/
+build/
+*.egg-info/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# 가상환경
+venv/
+env/
+ENV/
+
+# 결과 파일 (개발용)
+results/
+*.log
+
+# IDE 설정
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 시스템 파일
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# 테스트
+.pytest_cache/
+.coverage
+htmlcov/
+
+# 문서
+docs/_build/
+
+# 임시 파일
+*.tmp
+*.bak

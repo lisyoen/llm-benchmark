@@ -1,10 +1,10 @@
-# llm-benchmark
+# Run Bench
 
 GPU 서버 환경에서 LLM 성능을 자동 측정하기 위한 내부용 벤치마크 도구입니다.
 
 ## 개요
 
-`llm-benchmark`는 S-CORE의 LLM Run Package 구성 요소(vLLM, LiteLLM 등)를 대상으로  
+**Run Bench**는 S-CORE의 LLM Run Package 구성 요소(vLLM, LiteLLM 등)를 대상으로  
 **지연시간, 처리량, 안정성, 효율성**을 자동 측정하고 리포트를 생성하는 도구입니다.
 
 ### 주요 기능
@@ -37,22 +37,70 @@ llm-benchmark/
 
 ## 설치
 
-### 요구사항
+### 방법 1: 자동 설치 스크립트 (권장)
 
-- Python 3.11+
-- pip
-
-### 의존성 설치
+**Run Bench**는 간편한 설치 스크립트를 제공합니다:
 
 ```bash
-pip install -r requirements.txt
+# 1. 저장소 클론
+git clone https://github.com/lisyoen/llm-benchmark.git
+cd llm-benchmark
+
+# 2. 설치 스크립트 실행
+./install.sh
 ```
+
+설치 스크립트는 자동으로 다음을 수행합니다:
+- Python 버전 확인 (3.11+)
+- 가상환경 생성 (`venv/`)
+- 의존성 패키지 설치
+- 디렉토리 구조 생성
+- 설정 파일 템플릿 생성
+
+### 방법 2: 패키지 설치
+
+배포용 패키지를 사용하는 경우:
+
+```bash
+# 패키지 파일에서 설치
+pip install llm-benchmark-1.0.0.tar.gz
+
+# 또는 GitHub에서 직접 설치
+pip install git+https://github.com/lisyoen/llm-benchmark.git
+```
+
+### 방법 3: 수동 설치
+
+```bash
+# 저장소 클론
+git clone https://github.com/lisyoen/llm-benchmark.git
+cd llm-benchmark
+
+# 가상환경 생성 및 활성화
+python3 -m venv venv
+source venv/bin/activate
+
+# 의존성 설치
+pip install -r requirements.txt
+
+# 필요한 디렉토리 생성
+mkdir -p results/raw results/summary results/reports
+```
+
+### 요구사항
+
+- **Python**: 3.11 이상
+- **OS**: Linux (Ubuntu, CentOS 등)
+- **의존성 패키지**:
+  - httpx >= 0.27.0 (HTTP 클라이언트)
+  - pyyaml >= 6.0.1 (설정 파일 파싱)
+  - pandas >= 2.2.0 (데이터 분석)
 
 ## 사용법
 
 ### 측정 방식
 
-`llm-benchmark`는 실제 프로덕션 환경을 시뮬레이션하는 **부하 생성 기반 성능 측정** 방식을 사용합니다:
+**Run Bench**는 실제 프로덕션 환경을 시뮬레이션하는 **부하 생성 기반 성능 측정** 방식을 사용합니다:
 
 1. **비동기 요청 생성**: 설정된 RPS(초당 요청 수)에 맞춰 일정한 간격으로 요청을 생성
 2. **동시성 제어**: 여러 요청이 동시에 처리되도록 비동기 태스크로 병렬 실행
@@ -68,7 +116,7 @@ pip install -r requirements.txt
 $ python3 scripts/run_bench_interactive.py
 
 ============================================================
-🚀 LLM 벤치마크 대화형 실행
+🚀 Run Bench - 대화형 벤치마크 실행
 ============================================================
 
 💡 팁: 엔터만 치면 기본값 사용 (5분 고부하 테스트)
@@ -287,6 +335,7 @@ python3 scripts/gen_report.py
 
 ## 개발자 정보
 
+**프로젝트명:** Run Bench  
 **작성자:** 이창연 (AI사업그룹)  
 **작성일:** 2025-11-07  
 **라이선스:** MIT
@@ -297,4 +346,4 @@ python3 scripts/gen_report.py
 
 ---
 
-**Note:** 이 도구는 S-CORE 내부 사용을 위해 개발되었습니다.
+**Note:** Run Bench는 S-CORE 내부 사용을 위해 개발되었습니다.
