@@ -78,6 +78,21 @@ workloads:
 
 ### 2. 벤치마크 실행
 
+#### 🚀 대화형 실행 (추천!)
+
+```bash
+# 가상환경 활성화
+source venv/bin/activate
+
+# 대화형 벤치마크 실행
+python3 scripts/run_bench_interactive.py
+```
+
+**특징:**
+- 💡 엔터만 치면 기본값 사용 (5분 고부하 테스트)
+- 서버, 모델, 워크로드 선택 가능
+- 커스텀 설정 지원 (시간, RPS, 토큰 수 등)
+
 #### 개별 스크립트 실행
 
 ```bash

@@ -31,10 +31,10 @@ workloads:
     temperature: 0.7
     prompt_type: long
     
-  # 4. 스트레스 테스트 (한계 측정)
+  # 4. 스트레스 테스트 (한계 측정) - 10분
   - name: stress-test
-    description: "스트레스 테스트 - 시스템 한계 측정"
-    duration: 120
+    description: "스트레스 테스트 - 시스템 한계 측정 (10분)"
+    duration: 600
     rps: 50
     concurrency: 100
     max_tokens: 1024
