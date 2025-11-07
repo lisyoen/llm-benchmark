@@ -1,6 +1,28 @@
 # 테스트 대상 모델 목록
+# 상세 정보는 .github/config.yaml 참고
 
 models:
+  # Qwen 계열 (사내 서버 주력 모델)
+  - name: qwen3-coder-30b
+    full_name: Qwen/Qwen3-Coder-30B-A3B-Instruct
+    context_length: 16384
+    description: "Qwen 3 Coder 30B (S-Core, Spark 서버)"
+    
+  - name: qwen3-4b
+    full_name: Qwen/Qwen3-4B-Instruct-2507
+    context_length: 16384
+    description: "Qwen 3 4B Instruct (Titan 테스트 서버)"
+    
+  - name: qwen2.5-7b-instruct
+    full_name: Qwen/Qwen2.5-7B-Instruct
+    context_length: 32768
+    description: "Qwen 2.5 7B Instruct"
+    
+  - name: qwen2.5-72b-instruct
+    full_name: Qwen/Qwen2.5-72B-Instruct
+    context_length: 32768
+    description: "Qwen 2.5 72B Instruct"
+  
   # Llama 계열
   - name: llama-3.1-8b-instruct
     full_name: meta-llama/Meta-Llama-3.1-8B-Instruct
@@ -17,17 +39,6 @@ models:
     full_name: mistralai/Mistral-7B-Instruct-v0.3
     context_length: 32768
     description: "Mistral 7B Instruct v0.3"
-    
-  # Qwen 계열
-  - name: qwen2.5-7b-instruct
-    full_name: Qwen/Qwen2.5-7B-Instruct
-    context_length: 32768
-    description: "Qwen 2.5 7B Instruct"
-    
-  - name: qwen2.5-72b-instruct
-    full_name: Qwen/Qwen2.5-72B-Instruct
-    context_length: 32768
-    description: "Qwen 2.5 72B Instruct"
 
 # 기본 모델 (미지정 시 사용)
-default_model: llama-3.1-8b-instruct
+default_model: qwen3-coder-30b

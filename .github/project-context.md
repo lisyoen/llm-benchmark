@@ -210,19 +210,44 @@ workloads:
 
 ## 참고 사항
 
+### LLM 서버 접속 정보
+**상세 정보는 `.github/config.yaml` 참고**
+
+#### 사용 가능한 서버
+
+1. **Titan GPU 서버** (테스트용)
+   - 엔드포인트: `http://172.21.113.213:4000/v1`
+   - API Key: `sk-BgtxyTF5R84B8M_v_1NAXw`
+   - 모델: `Qwen/Qwen3-4B-Instruct-2507`
+   - 용도: 빠른 테스트 및 개발
+
+2. **Spark GPU 서버** (테스트용)
+   - 엔드포인트: `http://172.21.113.31:4000/v1`
+   - API Key: `sk-wXZENemUnmkTPLwbmj7Vfg`
+   - 모델: `Qwen/Qwen3-Coder-30B-A3B-Instruct`
+   - 용도: 중간 규모 테스트
+
+3. **S-Core 주력 LLM 서버** (프로덕션)
+   - 엔드포인트: `http://172.21.135.113:4000/v1`
+   - API Key: `sk-EXz62Nu03qDE31sjVL51Qw`
+   - 모델: `Qwen/Qwen3-Coder-30B-A3B-Instruct`
+   - 하드웨어: H200 GPU 8장 구성
+   - 용도: 본격적인 벤치마크 측정
+
 ### 환경 변수
 - `OPENAI_API_KEY`: OpenAI API 키 (비교 테스트용)
 
 ### 포트
 - vLLM: 기본 8000번
-- LiteLLM: 기본 4000번
+- LiteLLM: 기본 4000번 (사내 서버 사용 중)
 
 ### 주의사항
 - 대규모 부하 테스트 시 대상 서버 리소스 고려
 - 실제 프로덕션 환경에서는 사전 협의 필요
-- API 키 및 엔드포인트는 .env 파일로 관리 권장
+- API 키 및 엔드포인트는 `.github/config.yaml` 또는 `.env`로 관리
+- 사내 네트워크에서만 접속 가능한 내부 서버
 
 ---
 
-**문서 버전:** 1.0  
+**문서 버전:** 1.1  
 **최종 업데이트:** 2025-11-07

@@ -31,6 +31,16 @@ llm-benchmark/
 - 토큰 처리량: tokens/sec
 - 성공률: 안정성 지표
 
+## 서버 접속 정보
+**LLM 서버 엔드포인트 및 API 키는 `.github/config.yaml` 참고**
+
+사용 가능한 서버:
+- **Titan** (172.21.113.213:4000): Qwen3-4B-Instruct (테스트용)
+- **Spark** (172.21.113.31:4000): Qwen3-Coder-30B-A3B-Instruct (테스트용)
+- **S-Core** (172.21.135.113:4000): Qwen3-Coder-30B-A3B-Instruct (주력 서버, H200 8장)
+
+벤치마크 설정 시 `configs/targets.yaml`에 위 정보를 반영하여 사용
+
 ## 코드 품질 관리
 
 ### 문법 오류 확인 및 수정
