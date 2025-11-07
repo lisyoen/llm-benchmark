@@ -37,44 +37,53 @@ llm-benchmark/
 
 ## 설치
 
-### 방법 1: 자동 설치 스크립트 (권장)
+### 방법 1: 패키지 설치 (권장)
 
-**Run Bench**는 간편한 설치 스크립트를 제공합니다:
+**Run Bench** 배포 패키지를 사용하는 방법:
 
 ```bash
-# 1. 저장소 클론
-git clone https://github.com/lisyoen/llm-benchmark.git
-cd llm-benchmark
+# 1. 패키지 압축 해제
+tar -xzf run-bench-1.0.0.tar.gz
+cd run-bench-1.0.0
 
 # 2. 설치 스크립트 실행
 ./install.sh
 ```
 
 설치 스크립트는 자동으로 다음을 수행합니다:
+- 시스템 의존성 확인 및 자동 설치 (python3, python3-venv, python3-pip, git)
 - Python 버전 확인 (3.11+)
 - 가상환경 생성 (`venv/`)
-- 의존성 패키지 설치
+- Python 의존성 패키지 설치
 - 디렉토리 구조 생성
 - 설정 파일 템플릿 생성
 
-### 방법 2: 패키지 설치
+**지원 OS**: Ubuntu, Debian, CentOS, RHEL, Fedora
 
-배포용 패키지를 사용하는 경우:
+### 방법 2: 수동 설치
+
+소스 코드가 있는 경우 직접 설치:
 
 ```bash
-# 패키지 파일에서 설치
-pip install llm-benchmark-1.0.0.tar.gz
+# 가상환경 생성 및 활성화
+python3 -m venv venv
+source venv/bin/activate
 
-# 또는 GitHub에서 직접 설치
-pip install git+https://github.com/lisyoen/llm-benchmark.git
+# 의존성 설치
+pip install -r requirements.txt
+
+# 필요한 디렉토리 생성
+mkdir -p results/raw results/summary results/reports
 ```
 
-### 방법 3: 수동 설치
+### 패키지 빌드 (개발자용)
+
+배포 패키지를 직접 생성하려면:
 
 ```bash
-# 저장소 클론
-git clone https://github.com/lisyoen/llm-benchmark.git
-cd llm-benchmark
+./build_package.sh
+# run-bench-1.0.0.tar.gz 파일이 생성됩니다
+```
 
 # 가상환경 생성 및 활성화
 python3 -m venv venv

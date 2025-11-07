@@ -25,7 +25,7 @@ setup(
     description="Run Bench - LLM 추론 서버 성능 벤치마크 도구",
     long_description=read_long_description(),
     long_description_content_type="text/markdown",
-    url="https://github.com/lisyoen/llm-benchmark",
+    url="",
     packages=find_packages(include=["scripts", "scripts.*"]),
     include_package_data=True,
     python_requires=">=3.11",
@@ -51,7 +51,7 @@ setup(
         "": ["configs/*.yaml"],
     },
     project_urls={
-        "Bug Reports": "https://github.com/lisyoen/llm-benchmark/issues",
-        "Source": "https://github.com/lisyoen/llm-benchmark",
+        "Bug Reports": "",
+        "Source": "",
     },
 )
