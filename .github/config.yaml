@@ -16,12 +16,12 @@ models:
       - chat
       - edit
       - apply
-# for Spark: 사내 테스트용 GPU 장비 DGX Spark
+# for Spark: 사내 테스트용 GPU 장비 DGX Spark, 벤치마크용 API Key 발급
   - name: Spark/Qwen3-Coder-30B-A3B-Instruct
     systemMessage: 한국어로 답변해줘.
     provider: openai
     model: Qwen/Qwen3-Coder-30B-A3B-Instruct
-    apiKey: sk-wXZENemUnmkTPLwbmj7Vfg
+    apiKey: sk--VGcWKuO_nquce9dMMc5IA
     apiBase: http://172.21.113.31:4000/v1
     contextLength: 16384
     roles:
