@@ -9,11 +9,11 @@ targets:
     api_key: "sk-EXz62Nu03qDE31sjVL51Qw"
     description: "S-Core 주력 LLM 서버 (H200 GPU 8장)"
     
-  # Spark GPU 서버 (테스트용)
+  # Spark GPU 서버 (테스트용) - 벤치마크용 API Key
   - name: spark-test
     base_url: http://172.21.113.31:4000/v1
-    api_key: "sk-wXZENemUnmkTPLwbmj7Vfg"
-    description: "Spark GPU 서버 (DGX 테스트용)"
+    api_key: "sk--VGcWKuO_nquce9dMMc5IA"
+    description: "Spark GPU 서버 (DGX 테스트용, 벤치마크 전용 키)"
     
   # Titan GPU 서버 (빠른 테스트용)
   - name: titan-test
