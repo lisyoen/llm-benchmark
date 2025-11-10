@@ -1,0 +1,2 @@
+total_requests,successful_requests,failed_requests,success_rate,ttft_mean,ttft_median,ttft_p95,ttft_p99,total_time_mean,total_time_median,total_time_p95,total_time_p99,tokens_per_sec_mean,tokens_per_sec_median,tokens_per_sec_p95,total_tokens_generated,target,model,workload
+6517,245,6272,3.7593984962406015,282.8863186116121,331.60823488235474,509.50642228126526,576.7261400222778,415.0523333539768,455.99053263664246,647.1819496154785,696.2044348716736,2.4604208743043743,1.7670075665894385,6.427823519690148,194131,spark-test,Qwen/Qwen3-Coder-30B-A3B-Instruct,custom

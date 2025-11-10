@@ -15,6 +15,39 @@ echo -e "${GREEN}  Run Bench 설치 스크립트${NC}"
 echo -e "${GREEN}========================================${NC}"
 echo ""
 
+# 설치 위치 확인 및 이동
+REQUIRED_PATH="$HOME/llmrp/llm-benchmark"
+
+if [ "$PWD" != "$REQUIRED_PATH" ]; then
+    echo -e "${YELLOW}Run Bench는 ~/llmrp/llm-benchmark에 설치되어야 합니다.${NC}"
+    echo -e "${BLUE}현재 위치: $PWD${NC}"
+    echo -e "${BLUE}필요 위치: $REQUIRED_PATH${NC}"
+    echo ""
+    
+    # ~/llmrp 디렉토리가 없으면 생성
+    if [ ! -d "$HOME/llmrp" ]; then
+        echo -e "${YELLOW}~/llmrp 디렉토리를 생성합니다...${NC}"
+        mkdir -p "$HOME/llmrp"
+    fi
+    
+    # 대상 디렉토리가 이미 존재하는지 확인
+    if [ -d "$REQUIRED_PATH" ]; then
+        echo -e "${RED}오류: $REQUIRED_PATH가 이미 존재합니다.${NC}"
+        echo "기존 설치를 삭제하거나 다른 위치에서 실행하세요."
+        exit 1
+    fi
+    
+    # 현재 디렉토리를 올바른 위치로 이동
+    echo -e "${YELLOW}현재 디렉토리를 $REQUIRED_PATH로 이동합니다...${NC}"
+    mv "$PWD" "$REQUIRED_PATH"
+    cd "$REQUIRED_PATH"
+    echo -e "${GREEN}✓ 이동 완료${NC}"
+    echo ""
+fi
+
+echo -e "${GREEN}✓ 설치 위치 확인: $PWD${NC}"
+echo ""
+
 # sudo 권한 확인 함수
 check_sudo() {
     if ! sudo -n true 2>/dev/null; then
@@ -25,7 +58,7 @@ check_sudo() {
 }
 
 # 시스템 의존성 확인 및 설치
-echo -e "${YELLOW}[1/8] 시스템 의존성 확인...${NC}"
+echo -e "${YELLOW}[1/9] 시스템 의존성 확인...${NC}"
 
 # OS 확인
 if [ -f /etc/os-release ]; then
@@ -97,7 +130,7 @@ fi
 echo ""
 
 # Python 버전 확인
-echo -e "${YELLOW}[2/8] Python 버전 확인...${NC}"
+echo -e "${YELLOW}[2/9] Python 버전 확인...${NC}"
 PYTHON_VERSION=$(python3 --version | cut -d' ' -f2 | cut -d'.' -f1,2)
 REQUIRED_VERSION="3.11"
 
@@ -114,7 +147,7 @@ echo -e "${GREEN}✓ Python $PYTHON_VERSION 확인됨${NC}"
 echo ""
 
 # 가상환경 생성
-echo -e "${YELLOW}[3/8] 가상환경 생성 중...${NC}"
+echo -e "${YELLOW}[3/9] 가상환경 생성 중...${NC}"
 if [ -d "venv" ]; then
     echo "기존 venv 디렉토리가 존재합니다. 삭제 후 재생성하시겠습니까? (y/N)"
     read -r response
@@ -132,19 +165,19 @@ fi
 echo ""
 
 # 가상환경 활성화
-echo -e "${YELLOW}[4/8] 가상환경 활성화...${NC}"
+echo -e "${YELLOW}[4/9] 가상환경 활성화...${NC}"
 source venv/bin/activate
 echo -e "${GREEN}✓ 가상환경 활성화 완료${NC}"
 echo ""
 
 # pip 업그레이드
-echo -e "${YELLOW}[5/8] pip 업그레이드 중...${NC}"
+echo -e "${YELLOW}[5/9] pip 업그레이드 중...${NC}"
 pip install --upgrade pip > /dev/null 2>&1
 echo -e "${GREEN}✓ pip 업그레이드 완료${NC}"
 echo ""
 
 # 의존성 설치
-echo -e "${YELLOW}[6/8] 의존성 패키지 설치 중...${NC}"
+echo -e "${YELLOW}[6/9] 의존성 패키지 설치 중...${NC}"
 if [ -f "requirements.txt" ]; then
     pip install -r requirements.txt
     echo -e "${GREEN}✓ 의존성 설치 완료${NC}"
