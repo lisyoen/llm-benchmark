@@ -269,28 +269,15 @@ async def run_interactive(config_dir: Path, output_dir: Path):
     
     targets, models, workloads = load_configs(config_dir)
     
-    # 1. 서버 선택
-    target_options = [
-        {
-            'name': t['name'],
-            'data': t,
-            'display': f"{t['name']}: {t['description']}"
-        }
-        for t in targets['targets']
-    ]
-    
-    # Spark를 기본값으로 (인덱스 찾기)
-    default_target_idx = next(
-        (i for i, t in enumerate(target_options) if 'spark' in t['name'].lower()),
-        0
+    # 1. 서버 자동 선택 (default_target 사용)
+    default_target_name = targets.get('default_target', targets['targets'][0]['name'])
+    target = next(
+        (t for t in targets['targets'] if t['name'] == default_target_name),
+        targets['targets'][0]  # 폴백: 첫 번째 서버
     )
     
-    _, selected_target = select_option(
-        "📡 벤치마크 대상 서버 선택:",
-        target_options,
-        default_target_idx
-    )
-    target = selected_target['data']
+    print(f"\n📡 대상 서버: {target['name']} - {target['description']}")
+    print(f"💡 팁: 서버를 변경하려면 configs/targets.yaml의 default_target을 수정하세요.\n")
     
     # 2. 모델 선택 - LiteLLM에서 실제 가동 중인 모델 조회
     print("\n🔍 LiteLLM에서 가동 중인 모델 조회 중...")
