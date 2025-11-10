@@ -1,37 +1,12 @@
 # 벤치마크 대상 엔드포인트 설정
-# 상세 서버 정보는 .github/config.yaml 참고
+# localhost의 LiteLLM 서버를 대상으로 테스트합니다.
 
-# OpenAI 호환 API 엔드포인트 목록
 targets:
-  # S-Core 주력 LLM 서버 (H200 8장)
-  - name: score-main
-    base_url: http://172.21.135.113:4000/v1
-    api_key: "sk-EXz62Nu03qDE31sjVL51Qw"
-    description: "S-Core 주력 LLM 서버 (H200 GPU 8장)"
-    
-  # Spark GPU 서버 (테스트용) - 벤치마크용 API Key
-  - name: spark-test
-    base_url: http://172.21.113.31:4000/v1
-    api_key: "sk--VGcWKuO_nquce9dMMc5IA"
-    description: "Spark GPU 서버 (DGX 테스트용, 벤치마크 전용 키)"
-    
-  # Titan GPU 서버 (빠른 테스트용)
-  - name: titan-test
-    base_url: http://172.21.113.213:4000/v1
-    api_key: "sk-BgtxyTF5R84B8M_v_1NAXw"
-    description: "Titan GPU 서버 (빠른 개발/테스트용)"
-  
-  # 로컬 vLLM 서버 예시
-  - name: vllm-local
-    base_url: http://localhost:8000/v1
-    api_key: "EMPTY"  # vLLM은 기본적으로 API 키 불필요
-    description: "로컬 vLLM 서버"
-    
-  # OpenAI API (비교 기준용)
-  - name: openai
-    base_url: https://api.openai.com/v1
-    api_key: "${OPENAI_API_KEY}"  # 환경변수에서 가져오기
-    description: "OpenAI 공식 API"
+  # 로컬 LiteLLM 서버 (기본)
+  - name: localhost
+    base_url: http://localhost:4000/v1
+    api_key: "test-key"
+    description: "로컬 LiteLLM 서버"
 
 # 기본 대상 (미지정 시 사용)
-default_target: score-main
+default_target: localhost

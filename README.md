@@ -125,17 +125,210 @@ source venv/bin/activate
 
 **VSCode 터미널**은 자동으로 가상환경을 활성화하지만, **일반 SSH 터미널**에서는 수동 활성화가 필요합니다.
 
-### 측정 방식
+---
 
-**Run Bench**는 실제 프로덕션 환경을 시뮬레이션하는 **부하 생성 기반 성능 측정** 방식을 사용합니다:
+## 테스트 동작 원리
 
-1. **비동기 요청 생성**: 설정된 RPS(초당 요청 수)에 맞춰 일정한 간격으로 요청을 생성
-2. **동시성 제어**: 여러 요청이 동시에 처리되도록 비동기 태스크로 병렬 실행
-3. **스트리밍 응답 측정**: 
-   - TTFT (Time To First Token): 첫 토큰 수신까지의 시간
-   - 전체 응답 시간: 요청부터 완료까지의 총 시간
-   - 토큰 처리량: 생성된 토큰 수 / 생성 시간
-4. **통계 분석**: Mean, Median, P95, P99 등의 백분위수 계산
+### 개요
+
+**Run Bench**는 Python의 `asyncio`를 사용한 **비동기 부하 생성 방식**으로 LLM API 성능을 측정합니다.  
+실제 프로덕션 환경의 사용 패턴을 시뮬레이션하여 TTFT, 응답시간, 처리량, 안정성을 정확하게 측정합니다.
+
+### 핵심 구조
+
+#### 1. 비동기 요청 생성기 (Request Generator)
+
+```python
+# scripts/run_bench.py 의 핵심 로직
+
+async def request_worker(self, model: str, prompts: list, config: dict):
+    """각 요청을 처리하는 비동기 워커"""
+    while time.time() < self.end_time:
+        # 1. 프롬프트 랜덤 선택
+        prompt = random.choice(prompts)
+        
+        # 2. API 호출 시작 시간 기록
+        start_time = time.time()
+        
+        # 3. 스트리밍 요청 생성
+        async with httpx.AsyncClient() as client:
+            async with client.stream(
+                'POST',
+                f'{base_url}/chat/completions',
+                json={
+                    "model": model,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "max_tokens": config['max_tokens'],
+                    "temperature": config['temperature'],
+                    "stream": True
+                }
+            ) as response:
+                # 4. 첫 토큰 수신 시간 측정 (TTFT)
+                first_token_time = None
+                async for line in response.aiter_lines():
+                    if first_token_time is None:
+                        first_token_time = time.time()
+                        ttft = first_token_time - start_time
+                
+                # 5. 응답 완료 시간 측정
+                end_time = time.time()
+                total_time = end_time - start_time
+        
+        # 6. 결과 저장
+        self.results.append({
+            "timestamp": start_time,
+            "ttft": ttft,
+            "total_time": total_time,
+            "tokens": generated_tokens,
+            "success": True
+        })
+```
+
+#### 2. 동시성 제어 (Concurrency Control)
+
+**Run Bench**는 `asyncio.Semaphore`를 사용하여 동시 요청 수를 제어합니다:
+
+```python
+# 동시성 설정 예시: concurrency = 50
+semaphore = asyncio.Semaphore(50)
+
+async def rate_limited_request():
+    async with semaphore:  # 최대 50개까지만 동시 실행
+        await make_api_request()
+```
+
+**동작 방식:**
+- `concurrency=50` 설정 시, **최대 50개의 요청이 동시에 처리**됩니다
+- 51번째 요청은 앞의 요청이 완료될 때까지 대기합니다
+- 이를 통해 서버 과부하를 방지하면서 실제 부하를 시뮬레이션합니다
+
+#### 3. RPS (Requests Per Second) 제어
+
+**일정한 간격으로 요청을 생성**하여 안정적인 부하를 유지합니다:
+
+```python
+# RPS 설정 예시: rps = 20 (초당 20개 요청)
+interval = 1.0 / rps  # 0.05초 (50ms) 간격
+
+async def generate_requests():
+    for i in range(total_requests):
+        asyncio.create_task(make_request())  # 비동기 태스크 생성
+        await asyncio.sleep(interval)  # 50ms 대기
+```
+
+**동작 방식:**
+- `rps=20` 설정 시, **50ms마다 1개의 요청을 생성**합니다
+- 요청 생성과 처리가 분리되어 있어, 생성 속도는 일정하게 유지됩니다
+- 처리는 비동기로 진행되므로 응답을 기다리지 않고 다음 요청을 생성합니다
+
+#### 4. 스레드 vs 비동기 태스크
+
+**Run Bench는 스레드를 사용하지 않고 비동기 태스크를 사용합니다:**
+
+| 구분 | 스레드 방식 | 비동기 태스크 방식 (Run Bench) |
+|------|-------------|-------------------------------|
+| **동시성** | OS 레벨 스레드 | 단일 스레드 내 이벤트 루프 |
+| **리소스** | 스레드당 ~1MB 메모리 | 태스크당 ~KB 메모리 |
+| **최대 동시성** | ~수백 개 (OS 제한) | ~수만 개 (메모리 제한) |
+| **컨텍스트 스위칭** | 느림 (커널 개입) | 빠름 (유저 공간) |
+| **적합성** | CPU 바운드 작업 | I/O 바운드 작업 (네트워크) |
+
+**비동기가 효율적인 이유:**
+- LLM API 호출은 **I/O 바운드 작업** (네트워크 대기 시간이 김)
+- 요청을 보내고 응답을 기다리는 동안 다른 작업을 수행할 수 있습니다
+- 단일 스레드로 **수천 개의 동시 연결**을 효율적으로 처리합니다
+
+### 실행 흐름
+
+#### 5분 고부하 테스트 예시
+
+**설정:**
+- Duration: 300초 (5분)
+- RPS: 20 (초당 20개 요청)
+- Concurrency: 50 (최대 동시 요청 50개)
+- 예상 총 요청: 6,000개
+
+**실행 흐름:**
+
+```
+시작 (t=0s)
+  ↓
+[요청 생성기 시작]
+  ├─ 0.00s: 요청 #1 생성 → 비동기 태스크로 실행
+  ├─ 0.05s: 요청 #2 생성 → 비동기 태스크로 실행
+  ├─ 0.10s: 요청 #3 생성 → 비동기 태스크로 실행
+  └─ ... (50ms 간격으로 계속 생성)
+  
+[동시 처리]
+  ┌─ 태스크 #1: API 호출 → TTFT 측정 → 응답 수신 → 완료 (2.3초 소요)
+  ├─ 태스크 #2: API 호출 → TTFT 측정 → 응답 수신 → 완료 (2.1초 소요)
+  ├─ 태스크 #3: API 호출 → TTFT 측정 → 응답 수신 → 완료 (2.5초 소요)
+  └─ ... (최대 50개까지 동시 진행)
+
+[측정 항목]
+  ├─ TTFT (Time To First Token): 첫 토큰 수신까지의 시간
+  │   예) 요청 후 0.3초 만에 첫 토큰 수신
+  │
+  ├─ Total Time: 요청부터 완료까지의 총 시간
+  │   예) 요청 후 2.3초 만에 전체 응답 완료
+  │
+  ├─ Tokens/sec: 토큰 생성 속도
+  │   예) 512 토큰을 2.0초에 생성 = 256 tokens/sec
+  │
+  └─ Success Rate: 성공한 요청의 비율
+      예) 6,000개 중 5,980개 성공 = 99.67%
+
+종료 (t=300s)
+  ↓
+[통계 계산]
+  ├─ Mean (평균): 모든 값의 평균
+  ├─ Median (중앙값): 정렬 후 가운데 값
+  ├─ P95 (95 백분위): 95%의 요청이 이 시간 이하
+  └─ P99 (99 백분위): 99%의 요청이 이 시간 이하
+```
+
+### 실제 측정 데이터 예시
+
+**5분 고부하 테스트 결과 (RPS=20, Concurrency=50):**
+
+```json
+{
+  "timestamp": 1699615234.567,
+  "model": "Qwen/Qwen3-Coder-30B-A3B-Instruct",
+  "prompt": "Write a Python function to...",
+  "ttft": 0.342,              // 342ms 후 첫 토큰 수신
+  "total_time": 2.156,        // 총 2.156초 소요
+  "input_tokens": 45,         // 입력 토큰 수
+  "output_tokens": 512,       // 생성된 토큰 수
+  "tokens_per_sec": 237.5,    // 초당 237.5 토큰 생성
+  "success": true             // 성공
+}
+```
+
+**통계 요약:**
+
+| 지표 | Mean | Median | P95 | P99 |
+|------|------|--------|-----|-----|
+| TTFT (ms) | 325 | 310 | 450 | 580 |
+| Total Time (s) | 2.15 | 2.08 | 3.12 | 3.85 |
+| Tokens/sec | 245 | 248 | 198 | 165 |
+| Success Rate | 99.67% | - | - | - |
+
+### GPU 사용률 확인
+
+테스트 실행 중 다른 터미널에서 GPU 사용률을 모니터링할 수 있습니다:
+
+```bash
+# 1초마다 GPU 상태 갱신
+watch -n 1 nvidia-smi
+```
+
+**예상 결과:**
+- GPU 사용률: 0% → 95% (부하 테스트 시작 후)
+- GPU 온도: 45°C → 65°C (부하 증가)
+- 전력 소비: 50W → 400W (추론 작업 수행)
+
+---
 
 ### 대화형 인터페이스 예시
 
