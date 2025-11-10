@@ -242,8 +242,8 @@ class LLMBenchmark:
 
 async def main():
     parser = argparse.ArgumentParser(description="LLM Benchmark Runner")
-    parser.add_argument("--target", default="vllm-local", help="Target name from targets.yaml")
-    parser.add_argument("--model", default="llama-3.1-8b-instruct", help="Model name from models.yaml")
+    parser.add_argument("--target", default="localhost", help="Target name from targets.yaml")
+    parser.add_argument("--model", required=True, help="Model name (LiteLLM에서 가동 중인 모델)")
     parser.add_argument("--workload", default="medium-load", help="Workload name from workloads.yaml")
     parser.add_argument("--config-dir", type=Path, default=Path("configs"), help="Config directory")
     parser.add_argument("--output-dir", type=Path, default=Path("results/raw"), help="Output directory")

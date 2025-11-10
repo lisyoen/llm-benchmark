@@ -1,9 +1,9 @@
 # 세션 관리자
 
 ## 현재 활성 세션
-**세션 ID:** session-006-20251110-remove-server-select
+**세션 ID:** session-007-20251110-remove-models-yaml
 **상태:** 완료
-**일시:** 2025-11-10 (인터랙티브 모드 서버 선택 단계 제거)
+**일시:** 2025-11-10 (models.yaml 파일 제거)
 
 ---
 
@@ -17,6 +17,7 @@
 | session-004-20251107-packaging | 패키징 및 설치 스크립트 추가 | 완료 | 2025-11-07 |
 | session-005-20251110-model-list | LiteLLM 가동 모델 표시 기능 | 완료 | 2025-11-10 |
 | session-006-20251110-remove-server-select | 서버 선택 단계 제거 | 완료 | 2025-11-10 |
+| session-007-20251110-remove-models-yaml | models.yaml 파일 제거 | 완료 | 2025-11-10 |
 
 ---
 

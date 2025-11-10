@@ -220,23 +220,6 @@ spark-test:
 EOF
 fi
 
-if [ ! -f "configs/models.yaml" ]; then
-    echo -e "${YELLOW}⚠ configs/models.yaml이 없습니다. 템플릿을 생성합니다.${NC}"
-    cat > configs/models.yaml << 'EOF'
-# 모델 설정
-# target: 모델이 배포된 서버
-
-qwen3-coder-30b:
-  target: spark-test
-  description: "Qwen3 Coder 30B"
-
-# 추가 모델 예시:
-# my-model:
-#   target: my-server
-#   description: "Model Description"
-EOF
-fi
-
 if [ ! -f "configs/workloads.yaml" ]; then
     echo -e "${YELLOW}⚠ configs/workloads.yaml이 없습니다. 템플릿을 생성합니다.${NC}"
     cat > configs/workloads.yaml << 'EOF'

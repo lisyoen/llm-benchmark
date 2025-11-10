@@ -86,21 +86,17 @@ async def test_connection(base_url: str, api_key: str, model: str):
 
 async def main():
     parser = argparse.ArgumentParser(description="Test LLM server connection")
-    parser.add_argument("--target", default="titan-test", help="Target name from targets.yaml")
-    parser.add_argument("--model", help="Model name (override)")
+    parser.add_argument("--target", default="localhost", help="Target name from targets.yaml")
+    parser.add_argument("--model", required=True, help="Model name to test")
     parser.add_argument("--config-dir", type=Path, default=Path("configs"), help="Config directory")
     
     args = parser.parse_args()
     
     # 설정 로드
     targets_path = args.config_dir / "targets.yaml"
-    models_path = args.config_dir / "models.yaml"
     
     with open(targets_path, 'r', encoding='utf-8') as f:
         targets_config = yaml.safe_load(f)
-    
-    with open(models_path, 'r', encoding='utf-8') as f:
-        models_config = yaml.safe_load(f)
     
     # 대상 찾기
     target = next((t for t in targets_config['targets'] if t['name'] == args.target), None)
@@ -111,17 +107,8 @@ async def main():
             print(f"  - {t['name']}: {t['description']}")
         return
     
-    # 모델 결정
-    if args.model:
-        model_name = args.model
-    else:
-        # 기본 모델 사용
-        default_model_name = models_config.get('default_model', models_config['models'][0]['name'])
-        model_info = next((m for m in models_config['models'] if m['name'] == default_model_name), None)
-        model_name = model_info['full_name'] if model_info else default_model_name
-    
     # 연결 테스트
-    await test_connection(target['base_url'], target['api_key'], model_name)
+    await test_connection(target['base_url'], target['api_key'], args.model)
 
 
 if __name__ == "__main__":

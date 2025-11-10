@@ -40,11 +40,10 @@ def load_configs(config_dir: Path):
     """설정 파일 로드"""
     with open(config_dir / "targets.yaml", 'r', encoding='utf-8') as f:
         targets = yaml.safe_load(f)
-    with open(config_dir / "models.yaml", 'r', encoding='utf-8') as f:
-        models = yaml.safe_load(f)
     with open(config_dir / "workloads.yaml", 'r', encoding='utf-8') as f:
         workloads = yaml.safe_load(f)
-    return targets, models, workloads
+    return targets, workloads
+
 
 
 async def fetch_litellm_models(base_url: str, api_key: str) -> list:
@@ -147,7 +146,7 @@ def parse_arguments():
 
 async def run_with_cli_args(args, config_dir: Path, output_dir: Path):
     """CLI 인수로 벤치마크 실행"""
-    targets, models, workloads = load_configs(config_dir)
+    targets, workloads = load_configs(config_dir)
     
     # 대상 서버 찾기
     target = next((t for t in targets['targets'] if t['name'] == args.target), None)
@@ -156,11 +155,10 @@ async def run_with_cli_args(args, config_dir: Path, output_dir: Path):
         print(f"사용 가능한 서버: {', '.join(t['name'] for t in targets['targets'])}")
         sys.exit(1)
     
-    # 모델 찾기
-    model_info = next((m for m in models['models'] if m['name'] == args.model), None)
-    if not model_info:
-        print(f"❌ 오류: 모델 '{args.model}'을 찾을 수 없습니다.")
-        print(f"사용 가능한 모델: {', '.join(m['name'] for m in models['models'])}")
+    # 모델 이름 직접 사용 (LiteLLM API에서 가동 중인 모델이어야 함)
+    model_name = args.model
+    if not model_name:
+        print(f"❌ 오류: --model 인수가 필요합니다.")
         sys.exit(1)
     
     # 워크로드 설정
@@ -204,6 +202,7 @@ async def run_with_cli_args(args, config_dir: Path, output_dir: Path):
         workload['prompt_type'] = args.prompt_type
     
     # 프롬프트 로드
+    # 프롬프트 로드
     prompts = workloads['prompt_templates'][workload['prompt_type']]
     
     # 설정 확인
@@ -211,7 +210,7 @@ async def run_with_cli_args(args, config_dir: Path, output_dir: Path):
     print("🚀 CLI 모드로 벤치마크 실행")
     print("="*60)
     print(f"  서버: {target['name']} - {target['description']}")
-    print(f"  모델: {model_info['full_name']}")
+    print(f"  모델: {model_name}")
     print(f"  워크로드: {workload.get('description', 'Custom')}")
     print(f"    - 시간: {workload['duration']}초 ({workload['duration']//60}분)")
     print(f"    - RPS: {workload['rps']} (초당 요청 수)")
@@ -227,18 +226,20 @@ async def run_with_cli_args(args, config_dir: Path, output_dir: Path):
     
     await benchmark.run_workload(
         target,
-        model_info['full_name'],
+        model_name,
         workload,
         prompts
     )
     
     # 결과 저장
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_file = output_dir / f"bench_{target['name']}_{model_info['name']}_{workload['name']}_{timestamp}.jsonl"
+    # 파일명에 사용할 수 있도록 모델 이름 정리
+    model_filename = model_name.replace('/', '-').replace(' ', '-')
+    output_file = output_dir / f"bench_{target['name']}_{model_filename}_{workload['name']}_{timestamp}.jsonl"
     benchmark.save_results(output_file)
     
     print("\n✅ 벤치마크 완료!")
-    print(f"� 원시 데이터: {output_file}")
+    print(f"📁 원시 데이터: {output_file}")
     
     # 자동으로 분석 및 보고서 생성
     print("\n📊 결과 분석 중...")
@@ -267,7 +268,7 @@ async def run_interactive(config_dir: Path, output_dir: Path):
     """대화형 모드 실행"""
     print_header()
     
-    targets, models, workloads = load_configs(config_dir)
+    targets, workloads = load_configs(config_dir)
     
     # 1. 서버 자동 선택 (default_target 사용)
     default_target_name = targets.get('default_target', targets['targets'][0]['name'])
@@ -283,48 +284,37 @@ async def run_interactive(config_dir: Path, output_dir: Path):
     print("\n🔍 LiteLLM에서 가동 중인 모델 조회 중...")
     available_models = await fetch_litellm_models(target['base_url'], target['api_key'])
     
-    if available_models:
-        # LiteLLM API로부터 모델 목록을 성공적으로 가져온 경우
-        print(f"✅ {len(available_models)}개의 모델이 가동 중입니다.\n")
+    if not available_models:
+        # LiteLLM API 조회 실패 시 에러 메시지 표시하고 종료
+        print("❌ LiteLLM에서 모델 목록을 가져올 수 없습니다.")
+        print("   다음 사항을 확인하세요:")
+        print(f"   - LiteLLM 서버가 실행 중인지 확인: {target['base_url']}")
+        print(f"   - API 키가 올바른지 확인")
+        print(f"   - 네트워크 연결 확인")
+        sys.exit(1)
+    
+    # LiteLLM API로부터 모델 목록을 성공적으로 가져온 경우
+    print(f"✅ {len(available_models)}개의 모델이 가동 중입니다.\n")
+    
+    model_options = []
+    for model_id in available_models:
+        # 모델 ID에서 간단한 표시 이름 생성
+        display_name = model_id
+        if '/' in model_id:
+            display_name = model_id.split('/')[-1]
         
-        model_options = []
-        for model_id in available_models:
-            # 모델 ID에서 간단한 표시 이름 생성
-            display_name = model_id
-            if '/' in model_id:
-                display_name = model_id.split('/')[-1]
-            
-            model_options.append({
-                'name': model_id,
-                'data': {
-                    'name': model_id.replace('/', '-'),  # 파일명에 사용할 수 있도록
-                    'full_name': model_id,
-                    'description': f'LiteLLM 가동 모델'
-                },
-                'display': f"{display_name} ({model_id})"
-            })
-        
-        # 첫 번째 모델을 기본값으로
-        default_model_idx = 0
-        
-    else:
-        # LiteLLM API 조회 실패 시 기존 models.yaml 사용
-        print("⚠️  LiteLLM 모델 목록을 가져올 수 없습니다. configs/models.yaml 사용\n")
-        
-        model_options = [
-            {
-                'name': m['name'],
-                'data': m,
-                'display': f"{m['name']}: {m['description']}"
-            }
-            for m in models['models']
-        ]
-        
-        # qwen3-coder-30b를 기본값으로
-        default_model_idx = next(
-            (i for i, m in enumerate(model_options) if 'qwen3-coder-30b' in m['name']),
-            0
-        )
+        model_options.append({
+            'name': model_id,
+            'data': {
+                'name': model_id.replace('/', '-'),  # 파일명에 사용할 수 있도록
+                'full_name': model_id,
+                'description': f'LiteLLM 가동 모델'
+            },
+            'display': f"{display_name} ({model_id})"
+        })
+    
+    # 첫 번째 모델을 기본값으로
+    default_model_idx = 0
     
     _, selected_model = select_option(
         "🤖 테스트 모델 선택:",
