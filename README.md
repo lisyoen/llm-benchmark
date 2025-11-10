@@ -108,19 +108,38 @@ mkdir -p results/raw results/summary results/reports
 
 ## 사용법
 
-### 가상환경 활성화 (중요!)
+### 빠른 시작 (권장)
 
-벤치마크를 실행하기 전에 **반드시 가상환경을 활성화**해야 합니다:
+**가장 간단한 방법** - 한 줄로 벤치마크 실행:
 
 ```bash
-# 프로젝트 디렉토리로 이동
-cd llm-benchmark  # 또는 run-bench-20251107-001
+# 인터랙티브 모드로 벤치마크 실행
+./run_bench.sh
+```
 
-# 가상환경 활성화
+이 스크립트는 자동으로:
+- ✅ 가상환경 활성화
+- ✅ 인터랙티브 모드 실행
+- ✅ 결과 자동 생성
+
+---
+
+### 수동 실행 (고급 사용자)
+
+가상환경을 직접 제어하고 싶다면:
+
+```bash
+# 1. 가상환경 활성화
 source venv/bin/activate
 
-# 활성화되면 프롬프트에 (venv)가 표시됩니다
-(venv) user@host:~/llm-benchmark$
+# 2. 인터랙티브 모드 실행
+python3 scripts/run_bench_interactive.py
+
+# 또는 CLI 모드로 직접 실행
+python3 scripts/run_bench_interactive.py \
+  --target localhost \
+  --model "Qwen/Qwen3-Coder-30B-A3B-Instruct" \
+  --workload high-load
 ```
 
 **VSCode 터미널**은 자동으로 가상환경을 활성화하지만, **일반 SSH 터미널**에서는 수동 활성화가 필요합니다.

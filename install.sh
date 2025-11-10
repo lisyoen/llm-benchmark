@@ -252,6 +252,16 @@ fi
 echo -e "${GREEN}✓ 설정 파일 확인 완료${NC}"
 echo ""
 
+# run_bench.sh 실행 권한 설정
+echo -e "${YELLOW}[9/9] 실행 스크립트 권한 설정...${NC}"
+if [ -f "run_bench.sh" ]; then
+    chmod +x run_bench.sh
+    echo -e "${GREEN}✓ run_bench.sh 실행 권한 설정 완료${NC}"
+else
+    echo -e "${YELLOW}⚠ run_bench.sh 파일을 찾을 수 없습니다${NC}"
+fi
+echo ""
+
 # 완료 메시지
 echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN}  설치가 완료되었습니다!${NC}"
@@ -260,16 +270,14 @@ echo ""
 echo -e "${YELLOW}다음 단계:${NC}"
 echo "1. 설정 파일을 수정하세요:"
 echo "   - configs/targets.yaml (서버 설정)"
-echo "   - configs/models.yaml (모델 설정)"
 echo "   - configs/workloads.yaml (워크로드 설정)"
 echo ""
-echo "2. 가상환경을 활성화하세요:"
-echo -e "   ${GREEN}source venv/bin/activate${NC}"
+echo "2. 벤치마크를 실행하세요 (가장 간단!):"
+echo -e "   ${GREEN}./run_bench.sh${NC}"
 echo ""
-echo "3. 벤치마크를 실행하세요:"
+echo "   또는 수동으로:"
+echo -e "   ${GREEN}source venv/bin/activate${NC}"
 echo -e "   ${GREEN}python3 scripts/run_bench_interactive.py${NC}"
-echo "   또는"
-echo -e "   ${GREEN}python3 scripts/run_bench.py --target <target> --model <model> --workload <workload>${NC}"
 echo ""
 echo -e "${YELLOW}자세한 사용법은 README.md를 참고하세요.${NC}"
 echo ""
