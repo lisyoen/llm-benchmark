@@ -148,183 +148,179 @@ python3 scripts/run_bench_interactive.py \
 
 ## 테스트 동작 원리
 
-### 개요
+### 🎯 무엇을 테스트하나요?
 
-**Run Bench**는 Python의 `asyncio`를 사용한 **비동기 부하 생성 방식**으로 LLM API 성능을 측정합니다.  
-실제 프로덕션 환경의 사용 패턴을 시뮬레이션하여 TTFT, 응답시간, 처리량, 안정성을 정확하게 측정합니다.
+**Run Bench**는 실제 사용자 시나리오를 시뮬레이션하여 LLM API의 성능을 측정합니다.
 
-### 핵심 구조
+#### 테스트 프롬프트 예시
 
-#### 1. 비동기 요청 생성기 (Request Generator)
+**Short (짧은 질문)**
+- "안녕하세요. 오늘 날씨는 어떤가요?"
+- "Python으로 Hello World를 출력하는 코드를 작성해주세요."
 
-```python
-# scripts/run_bench.py 의 핵심 로직
+**Medium (중간 길이 - 기본)**
+- "대규모 언어 모델(LLM)의 작동 원리를 설명하고, Transformer의 핵심 구성 요소를 나열해주세요."
+- "Python에서 비동기 프로그래밍을 구현하는 방법을 예제 코드와 함께 설명해주세요."
 
-async def request_worker(self, model: str, prompts: list, config: dict):
-    """각 요청을 처리하는 비동기 워커"""
-    while time.time() < self.end_time:
-        # 1. 프롬프트 랜덤 선택
-        prompt = random.choice(prompts)
-        
-        # 2. API 호출 시작 시간 기록
-        start_time = time.time()
-        
-        # 3. 스트리밍 요청 생성
-        async with httpx.AsyncClient() as client:
-            async with client.stream(
-                'POST',
-                f'{base_url}/chat/completions',
-                json={
-                    "model": model,
-                    "messages": [{"role": "user", "content": prompt}],
-                    "max_tokens": config['max_tokens'],
-                    "temperature": config['temperature'],
-                    "stream": True
-                }
-            ) as response:
-                # 4. 첫 토큰 수신 시간 측정 (TTFT)
-                first_token_time = None
-                async for line in response.aiter_lines():
-                    if first_token_time is None:
-                        first_token_time = time.time()
-                        ttft = first_token_time - start_time
-                
-                # 5. 응답 완료 시간 측정
-                end_time = time.time()
-                total_time = end_time - start_time
-        
-        # 6. 결과 저장
-        self.results.append({
-            "timestamp": start_time,
-            "ttft": ttft,
-            "total_time": total_time,
-            "tokens": generated_tokens,
-            "success": True
-        })
+**Long (긴 요청)**
+- "RESTful API 서버를 FastAPI로 구현해주세요. (JWT 인증, CRUD, Postgres 연동, Docker 포함)"
+- "Kubernetes 마이크로서비스 아키텍처 설계 방안 제시 (통신 전략, 데이터 일관성, CI/CD 포함)"
+
+> 💡 **프롬프트는 `configs/workloads.yaml`에서 수정 가능합니다.**
+
+---
+
+### ⚙️ 어떻게 부하를 생성하나요?
+
+#### 핵심 파라미터
+
+| 파라미터 | 설명 | 예시 |
+|---------|------|------|
+| **RPS** | 초당 요청 수 (Requests Per Second) | `20` = 초당 20개 요청 생성 |
+| **Concurrency** | 동시 처리 요청 수 | `50` = 최대 50개 요청이 동시 실행 |
+| **Duration** | 테스트 지속 시간 (초) | `300` = 5분간 테스트 |
+| **Max Tokens** | 최대 생성 토큰 수 | `2048` = 최대 2048 토큰까지 생성 |
+
+#### 워크로드 프리셋
+
+```yaml
+# configs/workloads.yaml
+
+low-load:      # 저부하 - 개별 사용자 탐색
+  rps: 1       # 초당 1개 요청
+  concurrency: 1
+  duration: 60초
+
+medium-load:   # 중간부하 - 일반 서비스 (기본값)
+  rps: 5
+  concurrency: 10
+  duration: 300초 (5분)
+
+high-load:     # 고부하 - 피크 타임
+  rps: 20
+  concurrency: 50
+  duration: 180초 (3분)
+
+stress-test:   # 스트레스 - 시스템 한계 측정
+  rps: 50
+  concurrency: 100
+  duration: 600초 (10분)
 ```
 
-#### 2. 동시성 제어 (Concurrency Control)
+---
 
-**Run Bench**는 `asyncio.Semaphore`를 사용하여 동시 요청 수를 제어합니다:
+### 🔧 비동기 부하 생성 방식
+
+#### 1. RPS 제어 (일정한 요청 생성)
 
 ```python
-# 동시성 설정 예시: concurrency = 50
+# 0.05초(50ms)마다 1개씩 요청 생성 → RPS=20
+interval = 1.0 / rps  # 1.0 / 20 = 0.05초
+
+while 테스트_진행중:
+    새_요청_생성()
+    await asyncio.sleep(interval)  # 50ms 대기
+```
+
+**동작 방식:**
+- RPS=20 설정 시, **50ms마다** 새 요청을 생성합니다
+- 요청 생성과 처리가 **분리**되어 일정한 속도 유지
+- 5분(300초) 동안 총 **6,000개 요청** 생성
+
+#### 2. Concurrency 제어 (동시 처리 제한)
+
+```python
+# 최대 50개까지만 동시 실행
 semaphore = asyncio.Semaphore(50)
 
-async def rate_limited_request():
-    async with semaphore:  # 최대 50개까지만 동시 실행
-        await make_api_request()
+async def 요청_실행():
+    async with semaphore:  # 50개 슬롯 중 하나 사용
+        await API_호출()   # 실제 요청 처리
+    # 완료되면 슬롯 반환 (다음 요청이 실행 가능)
 ```
 
 **동작 방식:**
-- `concurrency=50` 설정 시, **최대 50개의 요청이 동시에 처리**됩니다
-- 51번째 요청은 앞의 요청이 완료될 때까지 대기합니다
-- 이를 통해 서버 과부하를 방지하면서 실제 부하를 시뮬레이션합니다
+- Concurrency=50 설정 시, **최대 50개 요청이 동시 실행**
+- 51번째 요청은 앞의 요청이 완료될 때까지 **대기**
+- 서버 과부하 방지하면서 실제 부하 시뮬레이션
 
-#### 3. RPS (Requests Per Second) 제어
+#### 3. 비동기 vs 멀티스레드
 
-**일정한 간격으로 요청을 생성**하여 안정적인 부하를 유지합니다:
+| 구분 | 멀티스레드 | 비동기 (Run Bench) |
+|------|-----------|-------------------|
+| 동시성 메커니즘 | OS 스레드 (커널 레벨) | 이벤트 루프 (유저 레벨) |
+| 메모리 사용 | 스레드당 ~1MB | 태스크당 ~KB |
+| 최대 동시성 | ~수백 개 | ~수만 개 |
+| 적합한 작업 | CPU 집약적 | I/O 집약적 ✅ |
 
-```python
-# RPS 설정 예시: rps = 20 (초당 20개 요청)
-interval = 1.0 / rps  # 0.05초 (50ms) 간격
+**왜 비동기를 사용하나요?**
+- LLM API 호출은 **네트워크 대기 시간**이 긴 I/O 작업
+- 응답을 기다리는 동안 다른 요청을 처리할 수 있음
+- 단일 프로세스로 **수천 개의 동시 연결** 효율적 처리
 
-async def generate_requests():
-    for i in range(total_requests):
-        asyncio.create_task(make_request())  # 비동기 태스크 생성
-        await asyncio.sleep(interval)  # 50ms 대기
+---
+
+### 📊 측정 지표
+
+#### TTFT (Time To First Token)
+- 요청 전송 후 **첫 토큰이 도착할 때까지 시간**
+- 사용자가 체감하는 **반응 속도**
+- 예: 0.2초 → 사용자가 즉시 응답 시작을 확인
+
+#### Total Response Time
+- 요청 전송부터 **응답 완료까지 전체 시간**
+- 스트리밍의 경우 마지막 토큰까지 시간
+- 예: 5.3초 → 전체 답변 생성 완료
+
+#### Token Throughput (처리량)
+- **초당 생성하는 토큰 수**
+- 모델의 생성 속도 지표
+- 예: 125 tokens/s → 1초에 125개 토큰 생성
+
+#### GPU Utilization (사용률) 🆕
+- GPU 사용률, 메모리, 전력, 온도 실시간 모니터링
+- 성능-전력 효율 분석 가능
+- 예: 평균 87% 사용률, 420W 전력
+
+---
+
+### 🚀 실행 흐름 예시
+
+**5분 고부하 테스트 (high-load)**
+
 ```
-
-**동작 방식:**
-- `rps=20` 설정 시, **50ms마다 1개의 요청을 생성**합니다
-- 요청 생성과 처리가 분리되어 있어, 생성 속도는 일정하게 유지됩니다
-- 처리는 비동기로 진행되므로 응답을 기다리지 않고 다음 요청을 생성합니다
-
-#### 4. 스레드 vs 비동기 태스크
-
-**Run Bench는 스레드를 사용하지 않고 비동기 태스크를 사용합니다:**
-
-| 구분 | 스레드 방식 | 비동기 태스크 방식 (Run Bench) |
-|------|-------------|-------------------------------|
-| **동시성** | OS 레벨 스레드 | 단일 스레드 내 이벤트 루프 |
-| **리소스** | 스레드당 ~1MB 메모리 | 태스크당 ~KB 메모리 |
-| **최대 동시성** | ~수백 개 (OS 제한) | ~수만 개 (메모리 제한) |
-| **컨텍스트 스위칭** | 느림 (커널 개입) | 빠름 (유저 공간) |
-| **적합성** | CPU 바운드 작업 | I/O 바운드 작업 (네트워크) |
-
-**비동기가 효율적인 이유:**
-- LLM API 호출은 **I/O 바운드 작업** (네트워크 대기 시간이 김)
-- 요청을 보내고 응답을 기다리는 동안 다른 작업을 수행할 수 있습니다
-- 단일 스레드로 **수천 개의 동시 연결**을 효율적으로 처리합니다
-
-### 실행 흐름
-
-#### 5분 고부하 테스트 예시
-
-**설정:**
+설정:
 - Duration: 300초 (5분)
-- RPS: 20 (초당 20개 요청)
-- Concurrency: 50 (최대 동시 요청 50개)
-- 예상 총 요청: 6,000개
+- RPS: 20
+- Concurrency: 50
+- 총 요청: 6,000개
 
-**실행 흐름:**
-
+타임라인:
+00:00 → 테스트 시작, GPU 모니터링 시작
+00:00 → 요청 #1 생성
+00:05 → 요청 #2 생성 (50ms 후)
+00:10 → 요청 #3 생성
+...
+01:00 → 60초 경과, 1,200개 요청 생성, 850개 완료
+        GPU: 87% 사용률, 420W
+03:00 → 3분 경과, 3,600개 요청 생성, 3,200개 완료
+        GPU: 91% 사용률, 450W
+05:00 → 테스트 완료, 6,000개 요청 생성
+05:30 → 모든 응답 수신 완료, GPU 모니터링 종료
+        
+결과:
+- 성공률: 99.2%
+- 평균 TTFT: 0.23초
+- 평균 응답시간: 5.8초
+- 처리량: 125 tokens/s
+- GPU 평균 사용률: 87%
 ```
-시작 (t=0s)
-  ↓
-[요청 생성기 시작]
-  ├─ 0.00s: 요청 #1 생성 → 비동기 태스크로 실행
-  ├─ 0.05s: 요청 #2 생성 → 비동기 태스크로 실행
-  ├─ 0.10s: 요청 #3 생성 → 비동기 태스크로 실행
-  └─ ... (50ms 간격으로 계속 생성)
-  
-[동시 처리]
-  ┌─ 태스크 #1: API 호출 → TTFT 측정 → 응답 수신 → 완료 (2.3초 소요)
-  ├─ 태스크 #2: API 호출 → TTFT 측정 → 응답 수신 → 완료 (2.1초 소요)
-  ├─ 태스크 #3: API 호출 → TTFT 측정 → 응답 수신 → 완료 (2.5초 소요)
-  └─ ... (최대 50개까지 동시 진행)
 
-[측정 항목]
-  ├─ TTFT (Time To First Token): 첫 토큰 수신까지의 시간
-  │   예) 요청 후 0.3초 만에 첫 토큰 수신
-  │
-  ├─ Total Time: 요청부터 완료까지의 총 시간
-  │   예) 요청 후 2.3초 만에 전체 응답 완료
-  │
-  ├─ Tokens/sec: 토큰 생성 속도
-  │   예) 512 토큰을 2.0초에 생성 = 256 tokens/sec
-  │
-  └─ Success Rate: 성공한 요청의 비율
-      예) 6,000개 중 5,980개 성공 = 99.67%
-
-종료 (t=300s)
-  ↓
-[통계 계산]
-  ├─ Mean (평균): 모든 값의 평균
-  ├─ Median (중앙값): 정렬 후 가운데 값
-  ├─ P95 (95 백분위): 95%의 요청이 이 시간 이하
-  └─ P99 (99 백분위): 99%의 요청이 이 시간 이하
-```
+---
 
 ### 실제 측정 데이터 예시
 
 **5분 고부하 테스트 결과 (RPS=20, Concurrency=50):**
-
-```json
-{
-  "timestamp": 1699615234.567,
-  "model": "Qwen/Qwen3-Coder-30B-A3B-Instruct",
-  "prompt": "Write a Python function to...",
-  "ttft": 0.342,              // 342ms 후 첫 토큰 수신
-  "total_time": 2.156,        // 총 2.156초 소요
-  "input_tokens": 45,         // 입력 토큰 수
-  "output_tokens": 512,       // 생성된 토큰 수
-  "tokens_per_sec": 237.5,    // 초당 237.5 토큰 생성
-  "success": true             // 성공
-}
-```
-
-**통계 요약:**
 
 | 지표 | Mean | Median | P95 | P99 |
 |------|------|--------|-----|-----|
