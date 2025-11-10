@@ -20,6 +20,7 @@ import subprocess
 from pathlib import Path
 from datetime import datetime
 
+import httpx
 import yaml
 
 # run_bench 모듈 import
@@ -44,6 +45,36 @@ def load_configs(config_dir: Path):
     with open(config_dir / "workloads.yaml", 'r', encoding='utf-8') as f:
         workloads = yaml.safe_load(f)
     return targets, models, workloads
+
+
+async def fetch_litellm_models(base_url: str, api_key: str) -> list:
+    """LiteLLM에서 실제 가동 중인 모델 목록 조회
+    
+    Args:
+        base_url: LiteLLM API base URL (예: http://localhost:4000/v1)
+        api_key: API 인증 키
+        
+    Returns:
+        모델 ID 리스트. 실패 시 빈 리스트 반환
+    """
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            headers = {
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json"
+            }
+            response = await client.get(f"{base_url}/models", headers=headers)
+            response.raise_for_status()
+            
+            data = response.json()
+            if 'data' in data:
+                model_ids = [model.get('id') for model in data['data'] if model.get('id')]
+                return model_ids
+            return []
+            
+    except Exception as e:
+        print(f"⚠️  LiteLLM 모델 목록 조회 실패: {e}")
+        return []
 
 
 def select_option(prompt: str, options: list, default_index: int = 0) -> tuple:
@@ -261,21 +292,52 @@ async def run_interactive(config_dir: Path, output_dir: Path):
     )
     target = selected_target['data']
     
-    # 2. 모델 선택
-    model_options = [
-        {
-            'name': m['name'],
-            'data': m,
-            'display': f"{m['name']}: {m['description']}"
-        }
-        for m in models['models']
-    ]
+    # 2. 모델 선택 - LiteLLM에서 실제 가동 중인 모델 조회
+    print("\n🔍 LiteLLM에서 가동 중인 모델 조회 중...")
+    available_models = await fetch_litellm_models(target['base_url'], target['api_key'])
     
-    # qwen3-coder-30b를 기본값으로
-    default_model_idx = next(
-        (i for i, m in enumerate(model_options) if 'qwen3-coder-30b' in m['name']),
-        0
-    )
+    if available_models:
+        # LiteLLM API로부터 모델 목록을 성공적으로 가져온 경우
+        print(f"✅ {len(available_models)}개의 모델이 가동 중입니다.\n")
+        
+        model_options = []
+        for model_id in available_models:
+            # 모델 ID에서 간단한 표시 이름 생성
+            display_name = model_id
+            if '/' in model_id:
+                display_name = model_id.split('/')[-1]
+            
+            model_options.append({
+                'name': model_id,
+                'data': {
+                    'name': model_id.replace('/', '-'),  # 파일명에 사용할 수 있도록
+                    'full_name': model_id,
+                    'description': f'LiteLLM 가동 모델'
+                },
+                'display': f"{display_name} ({model_id})"
+            })
+        
+        # 첫 번째 모델을 기본값으로
+        default_model_idx = 0
+        
+    else:
+        # LiteLLM API 조회 실패 시 기존 models.yaml 사용
+        print("⚠️  LiteLLM 모델 목록을 가져올 수 없습니다. configs/models.yaml 사용\n")
+        
+        model_options = [
+            {
+                'name': m['name'],
+                'data': m,
+                'display': f"{m['name']}: {m['description']}"
+            }
+            for m in models['models']
+        ]
+        
+        # qwen3-coder-30b를 기본값으로
+        default_model_idx = next(
+            (i for i, m in enumerate(model_options) if 'qwen3-coder-30b' in m['name']),
+            0
+        )
     
     _, selected_model = select_option(
         "🤖 테스트 모델 선택:",
