@@ -1,0 +1,16 @@
+{
+  "gpu_0": {
+    "name": "NVIDIA GB10",
+    "avg_utilization": 92.7751937984496,
+    "max_utilization": 96,
+    "avg_memory_used": 0.0,
+    "max_memory_used": 0,
+    "memory_total": 0,
+    "avg_power": 27.8781007751938,
+    "max_power": 29.487,
+    "power_limit": 0,
+    "avg_temperature": 54.34108527131783,
+    "max_temperature": 58,
+    "sample_count": 129
+  }
+}
