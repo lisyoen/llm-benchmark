@@ -1,83 +1,184 @@
 # 워크로드 설정 (요청 패턴)
+# AI Code Agent 성능 테스트용 - 코딩 난이도별 시나리오
 
 workloads:
-  # 1. 저부하 시나리오 (탐색적 사용)
+  # 1. 저부하 시나리오 (기초 코딩 작업)
   - name: low-load
-    description: "저부하 시나리오 - 개별 사용자 탐색"
+    description: "저부하 시나리오 - 기초 코딩 작업 (Easy)"
     duration: 60  # 초
     rps: 1  # Requests Per Second
     concurrency: 1
     max_tokens: 512
     temperature: 0.7
-    prompt_type: short  # short, medium, long
+    difficulty: easy  # easy, medium, hard
     
-  # 2. 중간부하 시나리오 (일반 프로덕션)
+  # 2. 중간부하 시나리오 (일반 개발 작업)
   - name: medium-load
-    description: "중간부하 시나리오 - 일반적인 서비스 사용"
+    description: "중간부하 시나리오 - 일반 개발 작업 (Medium)"
     duration: 300
     rps: 5
     concurrency: 10
     max_tokens: 1024
     temperature: 0.7
-    prompt_type: medium
+    difficulty: medium
     
-  # 3. 고부하 시나리오 (피크 타임)
+  # 3. 고부하 시나리오 (복잡한 개발 작업)
   - name: high-load
-    description: "고부하 시나리오 - 피크 타임 트래픽"
+    description: "고부하 시나리오 - 복잡한 아키텍처 설계 (Hard)"
     duration: 180
     rps: 20
     concurrency: 50
     max_tokens: 2048
     temperature: 0.7
-    prompt_type: long
+    difficulty: hard
     
   # 4. 스트레스 테스트 (한계 측정) - 10분
   - name: stress-test
-    description: "스트레스 테스트 - 시스템 한계 측정 (10분)"
+    description: "스트레스 테스트 - 시스템 한계 측정 (Medium 난이도, 10분)"
     duration: 600
     rps: 50
     concurrency: 100
     max_tokens: 1024
     temperature: 0.7
-    prompt_type: medium
+    difficulty: medium
 
-# 프롬프트 템플릿 (타입별)
+# 프롬프트 템플릿 (코딩 난이도별)
+# AI Code Agent로써의 코딩 능력 평가
+
 prompt_templates:
-  short:
-    - "안녕하세요. 오늘 날씨는 어떤가요?"
-    - "Python으로 Hello World를 출력하는 코드를 작성해주세요."
-    - "인공지능이란 무엇인가요?"
+  # Easy: 기초 코딩 작업 (10-30줄)
+  easy:
+    - "Python으로 리스트의 중복을 제거하고 정렬된 결과를 반환하는 함수를 작성해주세요."
+    - "주어진 문자열이 회문(palindrome)인지 확인하는 함수를 작성하고, 테스트 케이스 3개를 포함해주세요."
+    - "다음 Python 코드의 버그를 찾아 수정해주세요:\n```python\ndef calculate_average(numbers):\n    total = 0\n    for num in numbers:\n        total += num\n    return total / len(numbers)\n```"
+    - "딕셔너리를 JSON 파일로 저장하고 다시 읽어오는 유틸리티 함수 2개를 작성해주세요."
+    - "두 날짜 사이의 일수를 계산하는 함수를 Python datetime 모듈을 사용하여 구현해주세요."
     
+  # Medium: 실무 개발 작업 (50-150줄)
   medium:
-    - "대규모 언어 모델(LLM)의 작동 원리를 설명하고, 주요 아키텍처인 Transformer의 핵심 구성 요소를 나열해주세요."
-    - "Python에서 비동기 프로그래밍을 구현하는 방법을 예제 코드와 함께 설명해주세요."
-    - "효율적인 데이터베이스 인덱싱 전략에 대해 설명하고, B-tree와 Hash 인덱스의 차이점을 비교해주세요."
+    - |
+      FastAPI를 사용하여 다음 기능을 가진 RESTful API를 구현해주세요:
+      - GET /users: 모든 사용자 조회
+      - POST /users: 새 사용자 생성 (이름, 이메일 검증)
+      - GET /users/{id}: 특정 사용자 조회
+      - Pydantic 모델을 사용한 데이터 검증
+      - 에러 핸들링 포함
+      완전한 코드와 테스트 예제를 제공해주세요.
     
-  long:
     - |
-      다음 요구사항에 맞는 RESTful API 서버를 Python FastAPI로 구현해주세요:
-      1. 사용자 인증 (JWT 기반)
-      2. CRUD 작업을 지원하는 Todo 리스트 관리
-      3. Postgres 데이터베이스 연동
-      4. 에러 핸들링 및 로깅
-      5. Docker 컨테이너화
-      코드와 함께 상세한 설명을 포함해주세요.
+      정렬되지 않은 정수 배열에서 K번째로 큰 요소를 찾는 효율적인 알고리즘을 구현해주세요.
+      요구사항:
+      - 시간 복잡도 O(n log k) 이하
+      - heapq 또는 QuickSelect 알고리즘 사용
+      - 엣지 케이스 처리 (빈 배열, K > 배열 크기 등)
+      - 성능 비교를 위한 시간 측정 코드 포함
+    
     - |
-      Kubernetes 클러스터에서 마이크로서비스 아키텍처를 구축하려고 합니다.
-      다음 내용을 포함하여 설계 방안을 제시해주세요:
-      1. 서비스 간 통신 전략 (동기/비동기)
-      2. 데이터 일관성 보장 방법
-      3. 모니터링 및 로깅 전략
-      4. CI/CD 파이프라인 구성
-      5. 장애 복구 및 고가용성 확보 방안
+      SQLAlchemy를 사용하여 User와 Post의 일대다 관계를 구현하고,
+      다음 쿼리를 최적화해주세요:
+      1. 특정 사용자의 모든 게시물 조회 (N+1 문제 방지)
+      2. 최근 10개 게시물과 작성자 정보 조회
+      3. 게시물 수가 5개 이상인 사용자 조회
+      모델 정의, 쿼리 코드, 인덱스 설정을 포함해주세요.
+    
     - |
-      대용량 트래픽을 처리하는 실시간 추천 시스템을 설계해야 합니다.
-      다음 요구사항을 만족하는 아키텍처를 제안하고, 각 컴포넌트의 역할을 설명해주세요:
-      - 초당 10만 건 이상의 요청 처리
-      - 100ms 이내 응답 시간
-      - 사용자 행동 데이터 실시간 수집 및 분석
-      - A/B 테스트 지원
-      - 확장 가능한 모델 서빙 인프라
+      비동기 웹 스크래핑 유틸리티를 작성해주세요:
+      - aiohttp를 사용한 비동기 HTTP 요청
+      - 동시 요청 수 제한 (세마포어 사용)
+      - 재시도 로직 (최대 3회)
+      - 타임아웃 처리
+      - BeautifulSoup을 사용한 HTML 파싱
+      10개 URL을 동시에 처리하는 예제 포함
+    
+  # Hard: 복잡한 시스템 설계 (200줄 이상)
+  hard:
+    - |
+      마이크로서비스 아키텍처 기반의 E-commerce 주문 시스템을 설계하고 구현해주세요.
+      
+      요구사항:
+      1. 서비스 구성:
+         - Order Service: 주문 생성 및 관리
+         - Payment Service: 결제 처리
+         - Inventory Service: 재고 관리
+      
+      2. 기술 스택:
+         - FastAPI (각 서비스)
+         - Redis (분산 캐시 및 메시지 큐)
+         - PostgreSQL (데이터 저장)
+      
+      3. 핵심 기능:
+         - 분산 트랜잭션 처리 (Saga 패턴)
+         - 서비스 간 비동기 통신 (이벤트 기반)
+         - Circuit Breaker 패턴으로 장애 격리
+         - API Gateway 패턴
+      
+      4. 포함 사항:
+         - 각 서비스의 핵심 엔드포인트 구현
+         - Docker Compose 설정
+         - 에러 처리 및 롤백 로직
+         - 로깅 및 모니터링 설정
+      
+      전체 아키텍처 다이어그램과 핵심 코드를 제공해주세요.
+    
+    - |
+      대용량 로그 분석 시스템을 설계하고 구현해주세요.
+      
+      요구사항:
+      1. 성능 목표:
+         - 초당 100만 건 이상의 로그 수집
+         - 1초 이내 실시간 대시보드 업데이트
+         - 테라바이트 규모 데이터 장기 저장
+      
+      2. 시스템 구성:
+         - 로그 수집기 (비동기 I/O)
+         - 스트림 처리 파이프라인
+         - 시계열 데이터베이스 (ClickHouse/TimescaleDB)
+         - 실시간 집계 및 알림
+      
+      3. 구현 사항:
+         - Python asyncio 기반 로그 수집기
+         - 배치 처리 및 버퍼링 최적화
+         - 파티셔닝 전략
+         - 인덱싱 최적화
+         - 메모리 효율적인 데이터 구조
+      
+      4. 제공 사항:
+         - 성능 벤치마크 코드
+         - 병목 지점 분석
+         - 스케일링 전략
+         - 모니터링 메트릭 정의
+      
+      핵심 컴포넌트 구현과 성능 최적화 전략을 상세히 설명해주세요.
+    
+    - |
+      분산 캐시 시스템을 Python으로 구현해주세요.
+      
+      요구사항:
+      1. 핵심 기능:
+         - Consistent Hashing으로 데이터 분산
+         - LRU (Least Recently Used) 캐시 정책
+         - Redis를 백엔드로 사용
+         - 클라이언트 사이드 샤딩
+      
+      2. 고급 기능:
+         - 노드 추가/제거 시 데이터 재배치 최소화
+         - 장애 노드 자동 감지 및 우회
+         - Write-through / Write-behind 캐시 전략
+         - TTL (Time To Live) 지원
+         - 캐시 워밍업
+      
+      3. 성능 최적화:
+         - 연결 풀링
+         - 파이프라이닝
+         - 비동기 I/O
+         - 벤치마크 도구
+      
+      4. 모니터링:
+         - 캐시 적중률
+         - 응답 시간 분포 (P50, P95, P99)
+         - 메모리 사용량
+      
+      전체 구현 코드와 함께 설계 결정 사항에 대한 상세한 설명을 제공해주세요.
 
 # 기본 워크로드
 default_workload: medium-load

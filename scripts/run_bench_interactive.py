@@ -139,7 +139,9 @@ def parse_arguments():
     parser.add_argument("--concurrency", type=int, help="동시 요청 수")
     parser.add_argument("--max-tokens", type=int, help="최대 토큰 수")
     parser.add_argument("--temperature", type=float, help="Temperature (0.0-2.0)")
-    parser.add_argument("--prompt-type", choices=['short', 'medium', 'long'], help="프롬프트 타입")
+    parser.add_argument("--difficulty", choices=['easy', 'medium', 'hard'], help="코딩 난이도")
+    # 하위 호환성을 위해 --prompt-type도 유지 (내부적으로 difficulty로 매핑)
+    parser.add_argument("--prompt-type", dest='difficulty', choices=['easy', 'medium', 'hard'], help="코딩 난이도 (--difficulty와 동일)")
     
     return parser.parse_args()
 
@@ -184,7 +186,7 @@ async def run_with_cli_args(args, config_dir: Path, output_dir: Path):
             'concurrency': args.concurrency or 50,
             'max_tokens': args.max_tokens or 2048,
             'temperature': args.temperature or 0.7,
-            'prompt_type': args.prompt_type or 'medium'
+            'difficulty': args.difficulty or 'medium'
         }
     
     # CLI 인수로 오버라이드
@@ -198,12 +200,12 @@ async def run_with_cli_args(args, config_dir: Path, output_dir: Path):
         workload['max_tokens'] = args.max_tokens
     if args.temperature:
         workload['temperature'] = args.temperature
-    if args.prompt_type:
-        workload['prompt_type'] = args.prompt_type
+    if args.difficulty:
+        workload['difficulty'] = args.difficulty
     
-    # 프롬프트 로드
-    # 프롬프트 로드
-    prompts = workloads['prompt_templates'][workload['prompt_type']]
+    # 프롬프트 로드 (difficulty 기반)
+    difficulty = workload.get('difficulty', workload.get('prompt_type', 'medium'))
+    prompts = workloads['prompt_templates'][difficulty]
     
     # 설정 확인
     print("\n" + "="*60)
@@ -218,7 +220,7 @@ async def run_with_cli_args(args, config_dir: Path, output_dir: Path):
     print(f"    - 예상 총 요청: {workload['duration'] * workload['rps']}개")
     print(f"    - 최대 토큰: {workload['max_tokens']}")
     print(f"    - Temperature: {workload['temperature']}")
-    print(f"    - 프롬프트 타입: {workload['prompt_type']}")
+    print(f"    - 코딩 난이도: {difficulty}")
     print("="*60 + "\n")
     
     # 벤치마크 실행
@@ -339,21 +341,21 @@ async def run_interactive(config_dir: Path, output_dir: Path):
         max_tokens = input_with_default("  최대 토큰 수", 1024, int)
         temperature = input_with_default("  Temperature", 0.7, float)
         
-        prompt_types = ["short", "medium", "long"]
-        print("\n  프롬프트 길이:")
-        for i, pt in enumerate(prompt_types):
+        difficulties = ["easy", "medium", "hard"]
+        print("\n  코딩 난이도:")
+        for i, diff in enumerate(difficulties):
             prefix = "→" if i == 1 else " "
-            print(f"    {prefix} {i+1}. {pt}")
-        prompt_choice = input(f"  선택 (1-3) [기본값: 2 (medium)]: ").strip()
+            print(f"    {prefix} {i+1}. {diff}")
+        difficulty_choice = input(f"  선택 (1-3) [기본값: 2 (medium)]: ").strip()
         
-        if not prompt_choice or prompt_choice == "2":
-            prompt_type = "medium"
-        elif prompt_choice == "1":
-            prompt_type = "short"
-        elif prompt_choice == "3":
-            prompt_type = "long"
+        if not difficulty_choice or difficulty_choice == "2":
+            difficulty = "medium"
+        elif difficulty_choice == "1":
+            difficulty = "easy"
+        elif difficulty_choice == "3":
+            difficulty = "hard"
         else:
-            prompt_type = "medium"
+            difficulty = "medium"
         
         workload = {
             'name': 'custom',
@@ -363,7 +365,7 @@ async def run_interactive(config_dir: Path, output_dir: Path):
             'concurrency': min(rps * 10, 100),  # RPS의 10배 또는 최대 100
             'max_tokens': max_tokens,
             'temperature': temperature,
-            'prompt_type': prompt_type
+            'difficulty': difficulty
         }
         
     elif workload_choice == "2":
@@ -400,11 +402,12 @@ async def run_interactive(config_dir: Path, output_dir: Path):
             'concurrency': 50,
             'max_tokens': 1024,
             'temperature': 0.7,
-            'prompt_type': 'medium'
+            'difficulty': 'medium'
         }
     
-    # 프롬프트 로드
-    prompts = workloads['prompt_templates'][workload['prompt_type']]
+    # 프롬프트 로드 (difficulty 기반)
+    difficulty = workload.get('difficulty', workload.get('prompt_type', 'medium'))
+    prompts = workloads['prompt_templates'][difficulty]
     
     # 설정 확인
     print("\n" + "="*60)
@@ -419,7 +422,7 @@ async def run_interactive(config_dir: Path, output_dir: Path):
     print(f"    - 예상 총 요청: {workload['duration'] * workload['rps']}개")
     print(f"    - 최대 토큰: {workload['max_tokens']}")
     print(f"    - Temperature: {workload['temperature']}")
-    print(f"    - 프롬프트 타입: {workload['prompt_type']}")
+    print(f"    - 코딩 난이도: {difficulty}")
     print("="*60)
     
     confirm = input("\n시작하시겠습니까? (Y/n) [기본값: Y]: ").strip().lower()

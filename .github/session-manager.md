@@ -1,9 +1,9 @@
 # 세션 관리자
 
 ## 현재 활성 세션
-**세션 ID:** session-010-20251110-readme-improvement
+**세션 ID:** session-011-20251110-coding-difficulty-prompts
 **상태:** 완료
-**일시:** 2025-11-10 (README 문서 개선)
+**일시:** 2025-11-10 (코딩 난이도별 프롬프트 재구성)
 
 ---
 
@@ -21,6 +21,7 @@
 | session-008-20251110-run-script | 간편 실행 스크립트 추가 | 완료 | 2025-11-10 |
 | session-009-20251110-gpu-monitoring | 실시간 GPU 모니터링 통합 | 완료 | 2025-11-10 |
 | session-010-20251110-readme-improvement | README 문서 개선 | 완료 | 2025-11-10 |
+| session-011-20251110-coding-difficulty-prompts | 코딩 난이도별 프롬프트 재구성 | 완료 | 2025-11-10 |
 
 ---
 

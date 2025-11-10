@@ -1,22 +1,25 @@
 # 현재 작업 세션
 
 ## 현재 세션 정보
-**세션 ID:** session-010-20251110-readme-improvement  
-**제목:** README 문서 개선 - 프롬프트 내용 및 비동기 동작 설명 추가  
+**세션 ID:** session-011-20251110-coding-difficulty-prompts  
+**제목:** AI Code Agent 테스트를 위한 코딩 난이도별 프롬프트 재구성  
 **상태:** 완료  
 **시작 일시:** 2025-11-10
 
 ---
 
 ## 작업 요약
-README에 실제 프롬프트 예시와 비동기 동작 방식을 명확히 설명, 불필요한 코드 제거
+프롬프트를 "길이별" → "코딩 난이도별"로 재구성하여 AI Code Agent 성능 평가에 최적화
 
-**개선 사항:**
-1. 실제 프롬프트 3가지 타입 예시 추가 (Short/Medium/Long)
-2. RPS/Concurrency/Duration 파라미터 의미 명확화
-3. 시각적 워크플로우 타임라인 추가
-4. 비동기 vs 멀티스레드 비교표 추가
-5. 중복된 코드 섹션 약 130줄 제거
+**주요 변경사항:**
+1. workloads.yaml: prompt_type → difficulty (easy/medium/hard)
+2. 프롬프트 템플릿 전면 재작성 (12개)
+   - Easy: 간단한 함수, 기초 디버깅 (5개)
+   - Medium: API 구현, 알고리즘 문제 (4개)
+   - Hard: 복잡한 시스템 설계 (3개)
+3. 스크립트 코드 업데이트 (run_bench.py, run_bench_interactive.py)
+4. README 프롬프트 예시 변경
+5. 하위 호환성 유지 (prompt_type → difficulty fallback)
 
 ---
 

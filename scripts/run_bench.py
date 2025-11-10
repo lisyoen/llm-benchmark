@@ -325,9 +325,9 @@ async def main():
         print(f"Error: Workload '{args.workload}' not found")
         return
     
-    # 프롬프트 가져오기
-    prompt_type = workload['prompt_type']
-    prompts = workloads_config['prompt_templates'][prompt_type]
+    # 프롬프트 가져오기 (difficulty 기반)
+    difficulty = workload.get('difficulty', workload.get('prompt_type', 'medium'))
+    prompts = workloads_config['prompt_templates'][difficulty]
     
     # 워크로드 실행
     await benchmark.run_workload(target, model_info['full_name'], workload, prompts)
