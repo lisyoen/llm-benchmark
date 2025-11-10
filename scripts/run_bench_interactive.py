@@ -445,8 +445,14 @@ def generate_report(result_file: Path):
         print(result.stdout)
         
         # 최종 결과 출력
-        report_file = reports_dir / "benchmark_report.md"
-        if report_file.exists():
+        # 가장 최근 보고서 찾기
+        report_files = sorted(reports_dir.glob("benchmark_report_*.md"), key=lambda p: p.stat().st_mtime, reverse=True)
+        if not report_files:
+            # 구형 파일명도 확인
+            report_files = list(reports_dir.glob("benchmark_report.md"))
+        
+        if report_files:
+            report_file = report_files[0]
             print(f"\n✨ 보고서 생성 완료!")
             print(f"📄 보고서: {report_file}")
             

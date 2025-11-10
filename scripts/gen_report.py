@@ -195,10 +195,16 @@ def main():
     parser = argparse.ArgumentParser(description="Generate benchmark report")
     parser.add_argument("--summary-dir", type=Path, default=Path("results/summary"),
                        help="Directory containing summary CSV files")
-    parser.add_argument("--output", type=Path, default=Path("results/reports/benchmark_report.md"),
-                       help="Output Markdown file")
+    parser.add_argument("--output", type=Path, default=None,
+                       help="Output Markdown file (기본값: 날짜/시간 포함 자동 생성)")
     
     args = parser.parse_args()
+    
+    # output이 지정되지 않으면 날짜/시간 포함하여 자동 생성
+    if args.output is None:
+        from datetime import datetime
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        args.output = Path(f"results/reports/benchmark_report_{timestamp}.md")
     
     # 리포트 생성
     generator = ReportGenerator()
